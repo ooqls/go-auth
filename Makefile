@@ -11,3 +11,6 @@ build_auth:
 
 push_auth:
 	docker push ${IMAGE_REPOSITORY}auth:${IMAGE_TAG}
+
+make test_auth:
+	go test ./...

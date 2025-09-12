@@ -7,6 +7,13 @@ on:
     branches: [ "main" ]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Test the auth
+      run: make test_auth
 
   build:
 
