@@ -1,0 +1,22 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the backend
+      run: make build_backend
+    - name: login to docker hub
+      run: echo "${{ secrets.DOCKER_REGISTRY_TOKEN }}" | docker login -u samrreynolds4 --password-stdin
+    - name: push the backend
+      run: make push_backend

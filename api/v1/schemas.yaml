@@ -1,0 +1,133 @@
+openapi: 3.1.0
+info:
+  title: Authorization Schemas
+  version: 1.0.0
+components:
+  schemas:
+    UpdateRequest:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              event:
+                type: string
+              data:
+                type: object
+                additionalProperties: true
+    Role:
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    User:
+      type: object
+      required:
+      - id
+      - name
+      - email
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Resource:
+      type: object
+      required:
+      - id
+      - name
+      - group
+      - kind
+      - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        group:
+          type: string
+        kind:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Permission:
+      type: object
+      required:
+      - id
+      - resource_kind
+      - resource_group
+      - resource_name
+      - created_at
+      - updated_at
+      - actions
+      properties:
+        id:
+          type: string
+          format: uuid
+        resource_kind:
+          type: string
+        resource_group:
+          type: string
+        resource_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        actions:
+          type: array
+          items:
+            type: string
+    DeleteRequest:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+          format: uuid
+    DeleteResponse:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+          format: uuid
