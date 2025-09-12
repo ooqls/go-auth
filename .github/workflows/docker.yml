@@ -14,9 +14,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build the backend
-      run: make build_backend
+    - name: Build the auth
+      run: make build_auth
     - name: login to docker hub
       run: echo "${{ secrets.DOCKER_REGISTRY_TOKEN }}" | docker login -u samrreynolds4 --password-stdin
-    - name: push the backend
-      run: make push_backend
+    - name: push the auth
+      run: make push_auth

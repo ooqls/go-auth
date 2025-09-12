@@ -1,1 +1,13 @@
 .vscode
+./**/docs/**/*
+./**/docs/**/*.html
+./**/docs/**/*.css
+./**/docs/**/*.scss
+./**/docs/**/*.less
+./**/docs/**/*.json
+./**/docs/**/*.yaml
+./**/docs/**/*.yml
+./**/docs/**/*.html
+./**/docs/**/*.css
+./**/docs/**/*.scss
+./**/docs/**/*.less
