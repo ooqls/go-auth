@@ -10,4 +10,5 @@ build_auth:
 	docker buildx build --platform linux/amd64 -t ${IMAGE_REPOSITORY}auth:${IMAGE_TAG} -f ${DOCKERFILES}/auth.dockerfile .
 
 push_auth:
+	echo "$$DOCKER_REGISTRY_TOKEN" | docker login -u samrreynolds4 --password-stdin
 	docker push ${IMAGE_REPOSITORY}auth:${IMAGE_TAG}
