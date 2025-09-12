@@ -8,3 +8,6 @@ IMAGE_TAG := $(shell git describe --tags --exact-match 2>/dev/null || echo $(IMA
 
 build_auth:
 	docker buildx build --platform linux/amd64 -t ${IMAGE_REPOSITORY}auth:${IMAGE_TAG} -f ${DOCKERFILES}/auth.dockerfile .
+
+push_auth:
+	docker push ${IMAGE_REPOSITORY}auth:${IMAGE_TAG}

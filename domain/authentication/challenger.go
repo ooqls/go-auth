@@ -45,7 +45,7 @@ type AuthedResult struct {
 type Challenger interface {
 	IssueChallenge(ctx context.Context, user *users.User) (*Challenge, error)
 	VerifyChallenge(ctx context.Context, challengeId uuid.UUID, solvedChallenge []byte) (*AuthedResult, error)
-	VerifyRegistration(ctx context.Context, username string, secret []byte, key []byte) ([crypto.SALT_SIZE]byte, error)
+	VerifyRegistration(ctx context.Context, username string, secret []byte, key []byte) ([16]byte, error)
 }
 
 type ChallengerV1 struct {
