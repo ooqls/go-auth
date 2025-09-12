@@ -1,0 +1,97 @@
+openapi: 3.0.0
+info:
+  title: OpenAPI specification for auth
+  version: 1.0.0
+  description: This is the OpenAPI specification for the auth service.
+servers:
+  - url: https://localhost:8080
+    description: Local server
+  - url: https://auth:8080
+components:
+  securitySchemes:
+    bearerAuth: # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CreateRoleRequest:
+      type: object
+      required:
+      - name
+      - description
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    CreateRoleResponse:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+          format: uuid
+paths:
+  /auth/role:
+    get:
+      responses:
+        '200':
+          description: Successful role retrieval
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "schemas.yaml#/components/schemas/Role"
+        '401':
+          description: Invalid credentials
+    post:
+      operationId: createAuthRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful role creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateRoleResponse"
+        '401':
+          description: Invalid credentials
+    put:
+      operationId: updateAuthRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "schemas.yaml#/components/schemas/UpdateRequest"
+      responses:
+        '200':
+          description: Successful role update
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/Role"
+        '401':
+          description: Invalid credentials
+    delete:
+      operationId: deleteAuthRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "schemas.yaml#/components/schemas/DeleteRequest"
+      responses:
+        '200':
+          description: Successful role deletion
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/DeleteResponse"
+        '401':
+          description: Invalid credentials

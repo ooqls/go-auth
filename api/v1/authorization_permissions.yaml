@@ -1,0 +1,80 @@
+openapi: 3.0.0
+info:
+  title: Authorization Permissions
+  version: 1.0.0
+components:
+  schemas:
+    CreatePermissionRequest:
+      type: object
+      required:
+      - permission
+      properties:
+        permission:
+          $ref: "schemas.yaml#/components/schemas/Permission"
+    CreatePermissionResponse:
+      type: object
+      required:
+        - permission
+      properties:
+        permission:
+          $ref: "schemas.yaml#/components/schemas/Permission"
+paths:
+  /auth/permission:
+    get:
+      responses:
+        '200':
+          description: Successful permission retrieval
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "schemas.yaml#/components/schemas/Permission"
+        '401':
+          description: Invalid credentials
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePermissionRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful permission creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePermissionResponse"
+        '401':
+          description: Invalid credentials
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "schemas.yaml#/components/schemas/UpdateRequest"
+      responses:
+        '200':
+          description: Successful permission update
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/Permission"
+        '401':
+          description: Invalid credentials
+    delete:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "schemas.yaml#/components/schemas/DeleteRequest"
+      responses:
+        '200':
+          description: Successful permission deletion
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/DeleteResponse"
+        '401':
+          description: Invalid credentials

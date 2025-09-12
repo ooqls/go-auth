@@ -1,0 +1,258 @@
+openapi: 3.0.0
+info:
+  title: OpenAPI specification for auth
+  version: 1.0.0
+  description: This is the OpenAPI specification for the auth service.
+servers:
+  - url: https://localhost:8080
+    description: Local server
+  - url: https://auth:8080
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: OKEY
+  schemas:
+    RefreshRequest:
+      required:
+        - refresh_token
+      type: object
+      properties:
+        refresh_token:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 1024
+    RefreshResponse:
+      type: object
+      required:
+        - user_id
+        - auth_token
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        auth_token:
+          type: string
+          minLength: 1
+          maxLength: 1024
+    LoginChallengeRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 255
+    ChallengeServerResponse:
+      type: object
+      required:
+        - base64Challenge
+        - id
+        - base64Salt
+      properties:
+        id:
+          type: string
+          format: uuid
+        base64Challenge:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        base64Salt:
+          type: string
+          minLength: 1
+          maxLength: 1024
+    ChallengeClientResponse:
+      type: object
+      required:
+        - id
+        - base64Challenge
+      properties:
+        base64Challenge:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        id:
+          type: string
+          format: uuid
+    TokenResponse:
+      type: object
+      required:
+        - auth_token
+        - refresh_token
+        - user_id
+      properties:
+        auth_token:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        refresh_token:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        user_id:
+          type: string
+          format: uuid
+    RegistrationRequest:
+      type: object
+      required:
+      - username
+      - base64Key
+      - email
+      - encryptedSecret
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 255
+        base64Key:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        email:
+          type: string
+          minLength: 1
+          maxLength: 255
+        encryptedSecret:
+          type: string
+          minLength: 1
+          maxLength: 1024
+    RegistrationResponse:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+          format: uuid
+    AuthenticateRequest:
+      type: object
+      required: 
+      - token
+      properties:
+        token:
+          type: string
+    AuthenticateResponse:
+      type: object
+      required:
+      - user_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+paths:
+  /auth/refresh:
+    post:
+      summary: Refresh token
+      description: Refresh the authentication token
+      operationId: refreshToken
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Successful token refresh
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: Sets new authentication token cookie
+                example: OKEY=1234567890; Path=/; HttpOnly; Secure; SameSite=Strict
+        '401':
+          description: Invalid credentials
+  /auth/login_challenge:
+    post:
+      summary: Requests a challenge from the server to login
+      description: Requests a challenge from the server to login
+      operationId: loginChallenge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginChallengeRequest'
+      responses:
+        '200':
+          description: Challenge response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChallengeServerResponse'
+        '401':
+          description: Invalid credentials
+  /auth/login_challenge_response:
+    post:
+      summary: Answers the login question
+      description: Answers the login question
+      operationId: loginChallengeResponse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChallengeClientResponse'
+      responses:
+        '200':
+          description: Successful login
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: Sets new authentication token cookie
+                example: |
+                  OKEY=1234567890; Path=/; HttpOnly; Secure; SameSite=Strict
+                  RKEY=1234567890; Path=/; HttpOnly; Secure; SameSite=Strict
+                  UID=1234567890; Path=/; HttpOnly; Secure; SameSite=Strict
+        '401':
+          description: Invalid credentials
+  /auth/registration:
+    post:
+      summary: Starts a new user registration
+      description: Starts a new user registration
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistrationRequest'
+      responses:
+        '200':
+          description: Successfully registered user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationResponse'
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                description: Sets new authentication token cookie
+                example: |
+                  OKEY=1234567890; Path=/; HttpOnly; Secure; SameSite=Strict
+                  RKEY=1234567890; Path=/; HttpOnly; Secure; SameSite=Strict
+                  UID=1234567890; Path=/; HttpOnly; Secure; SameSite=Strict 
+        '409':
+          description: User already registered
+        '403':
+          description: Unable to start user registration
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

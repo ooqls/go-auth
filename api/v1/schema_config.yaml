@@ -1,0 +1,6 @@
+package: gen
+generate:
+  models: true
+output-options:
+  skip-prune: true
+output: gen/schemas.go
