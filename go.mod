@@ -13,7 +13,7 @@ require (
 	github.com/ooqls/go-app v1.1.3
 	github.com/ooqls/go-cache v1.0.5
 	github.com/ooqls/go-crypto v1.0.4
-	github.com/ooqls/go-db v1.0.8
+	github.com/ooqls/go-db v1.0.9
 	github.com/ooqls/go-eventsource v0.1.2
 	github.com/ooqls/go-log v0.2.2
 	github.com/redis/go-redis/v9 v9.14.0
