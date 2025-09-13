@@ -11,7 +11,7 @@ import (
 
 func TestAuditWriter(t *testing.T) {
 	ctx := context.Background()
-	c := testutils.StartElasticsearch(ctx)
+	c := testutils.StartElasticsearch(ctx, testutils.WithLogging())
 	defer c.Terminate(ctx)
 
 	err := elasticsearch.InitDefault()

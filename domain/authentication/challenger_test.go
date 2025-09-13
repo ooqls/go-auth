@@ -35,7 +35,7 @@ func TestChallenger_IssueChallenge(t *testing.T) {
 }
 
 func TestChallenger_VerifyChallenge(t *testing.T) {
-    testutils.InitRedis()
+    testutils.StartRedis(context.Background())
 
 	type TestCase struct {
 		description    string
