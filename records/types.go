@@ -2,7 +2,7 @@ package records
 
 import (
 	"github.com/google/uuid"
-	"github.com/ooqls/go-auth/records/gen"
+	"github.com/ooqls/go-auth/records/v1/gen"
 	"github.com/ooqls/go-eventsource/eventsourcingv1"
 )
 
@@ -21,7 +21,7 @@ type UserAgg struct {
 	Roles  []RoleAgg
 }
 
-//go:generate sqlc generate --file sqlc/sqlc.yaml
+//go:generate sqlc generate --file v1/sqlc/sqlc.yaml
 type User = gen.Authv1User
 type Role = gen.Authv1Role
 

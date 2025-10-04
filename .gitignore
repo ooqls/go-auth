@@ -11,3 +11,5 @@
 ./**/docs/**/*.css
 ./**/docs/**/*.scss
 ./**/docs/**/*.less
+.openapi-generator
+.openapi-generator-ignore

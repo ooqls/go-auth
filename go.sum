@@ -254,8 +254,8 @@ github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1y
 github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAlGdZY=
 github.com/onsi/gomega v1.19.0 h1:4ieX6qQjPP/BfC3mpsAtIGGlxTWPeA3Inl/7DtXw1tw=
 github.com/onsi/gomega v1.19.0/go.mod h1:LY+I3pBVzYsTBU1AnDwOSxaYi9WoWiqgwooUqq9yPro=
-github.com/ooqls/go-app v1.1.3 h1:0pVhKoZbuKVMX2zrrFSLp/mWZ+n2RIuMX4b8498WDpc=
-github.com/ooqls/go-app v1.1.3/go.mod h1:PNik1IIyRzgldKnN64gyTv/Zc3fO/mpMz9o6fmJb7z8=
+github.com/ooqls/go-app v1.1.4 h1:SKEFlnRh/ErP5AHl+KBZSD4WSMy0zS0VAAk2fRfyP+c=
+github.com/ooqls/go-app v1.1.4/go.mod h1:qn713VyniRW72kx5/Lc7+ZEYaQf0kC3kN58ivK9l7KQ=
 github.com/ooqls/go-cache v1.0.5 h1:Uocb8M1Jr21UIWl93HhwgUsd+7Hppo22YPZa9GUFLxA=
 github.com/ooqls/go-cache v1.0.5/go.mod h1:8vWgB8rJJ+5KZ6Y1Ak8VQrmo1cbPwrhif89Ra70scbU=
 github.com/ooqls/go-crypto v1.0.4 h1:Z9w34OwH+lYJlvB0wYW4QbRNEL04nq+nRqJiLXcSiNk=

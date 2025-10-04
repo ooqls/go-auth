@@ -1,8 +1,0 @@
-package: gen_authorization_resources
-generate:
-  gin-server: true
-  models: true
-  client: true
-import-mapping:
-  schemas.yaml: "github.com/ooqls/go-auth/api/v1/gen"
-output: gen/gen_authorization_resources/gen.go
