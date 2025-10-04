@@ -8,7 +8,7 @@ RUN go mod download && go mod verify
 
 COPY . .
 
-WORKDIR /app/api/v1/impl/authentication
+WORKDIR /app/api/v1/authentication
 RUN go build -o main .
 
 CMD ["./authentication"]

@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/oapi-codegen/runtime v1.1.2
-	github.com/ooqls/go-app v1.1.3
+	github.com/ooqls/go-app v1.1.4
 	github.com/ooqls/go-cache v1.0.5
 	github.com/ooqls/go-crypto v1.0.4
 	github.com/ooqls/go-db v1.0.9
