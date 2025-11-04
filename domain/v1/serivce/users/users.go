@@ -21,10 +21,10 @@ var (
 )
 
 type UserService interface {
-	CreateUser(ctx authorization.Context, email, key, salt, username string) (*users.User, error)
+	CreateUser(ctx authorization.Context, email string, key []byte, salt []byte, username string) (*users.User, error)
 	GetUser(ctx authorization.Context, id records.UserId) (*users.User, error)
 	GetUserByUsername(ctx authorization.Context, username string) (*users.User, error)
-	UpdateUser(ctx authorization.Context, id records.UserId, email, key, username string) error
+	UpdateUser(ctx authorization.Context, id records.UserId, email string, key []byte, username string) error
 	DeleteUser(ctx authorization.Context, id records.UserId) error
 }
 
@@ -44,16 +44,16 @@ func NewUserServiceImpl(ua authorization.UserAuthorizer, userR users.Reader, use
 	}
 }
 
-func (u *UserServiceImpl) CreateUser(ctx authorization.Context, email, key, salt, username string) (*users.User, error) {
+func (u *UserServiceImpl) CreateUser(ctx authorization.Context, email string, key []byte, salt []byte, username string) (*users.User, error) {
 	if email == "" {
 		return nil, ErrInvalidEmail
 	}
 
-	if key == "" {
+	if len(key) == 0 {
 		return nil, ErrInvalidKey
 	}
 
-	if salt == "" {
+	if len(salt) == 0 {
 		return nil, ErrInvalidSalt
 	}
 
@@ -61,7 +61,7 @@ func (u *UserServiceImpl) CreateUser(ctx authorization.Context, email, key, salt
 		return nil, ErrInvalidUsername
 	}
 
-	err := crypto.VerifyGCMAESKey([]byte(key))
+	err := crypto.VerifyGCMAESKey(key)
 	if err != nil {
 		u.l.Error("failed to verify key", zap.Error(err))
 		return nil, ErrInvalidKey
@@ -79,9 +79,9 @@ func (u *UserServiceImpl) CreateUser(ctx authorization.Context, email, key, salt
 
 	user := users.User{
 		Email:    email,
-		Key:      []byte(key),
+		Key:      key,
 		Username: username,
-		Salt:     []byte(salt),
+		Salt:     salt,
 		ID:       records.NewUserID(),
 	}
 
@@ -125,7 +125,7 @@ func (u *UserServiceImpl) GetUserByUsername(ctx authorization.Context, username 
 	return user, nil
 }
 
-func (u *UserServiceImpl) UpdateUser(ctx authorization.Context, targetUserid records.UserId, email, key, username string) error {
+func (u *UserServiceImpl) UpdateUser(ctx authorization.Context, targetUserid records.UserId, email string, key []byte, username string) error {
 	if err := u.ua.IsAuthorizedToPerformUserAction(&ctx, authorization.UpdateAction, users.User{ID: targetUserid}); err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (u *UserServiceImpl) UpdateUser(ctx authorization.Context, targetUserid rec
 	return u.userW.UpdateUser(ctx, users.User{
 		ID:       targetUserid,
 		Email:    email,
-		Key:      []byte(key),
+		Key:      key,
 		Username: username,
 	})
 }

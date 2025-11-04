@@ -3,8 +3,8 @@ package authentication
 import (
 	"bytes"
 	"context"
-	"encoding/binary"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -27,11 +27,11 @@ type Challenge struct {
 	CreatedAt time.Time  `json:"created_at"`
 }
 
-func NewChallenge(user *users.User) Challenge {
+func NewChallenge(user *users.User, challenge []byte) Challenge {
 	return Challenge{
 		ID:        uuid.New(),
 		User:      *user,
-		Challenge: []byte(uuid.New().String()),
+		Challenge: challenge,
 		CreatedAt: time.Now(),
 	}
 }
@@ -70,8 +70,9 @@ func (c *ChallengerV1) IssueChallenge(ctx context.Context, user *users.User) (*C
 	if err == nil {
 		return &cachedChallenge, nil
 	}
-
-	chal := NewChallenge(user)
+	chalBytes := []byte(uuid.New().String())
+	log.Printf("chalBytes: %v == %s", chalBytes, string(chalBytes))
+	chal := NewChallenge(user, chalBytes)
 	l.Sugar().Infow("storing challenge", "chal", chal)
 
 	err = c.store.Set(ctx, chal.ID.String(), chal)
@@ -94,6 +95,11 @@ func (c *ChallengerV1) VerifyChallenge(ctx context.Context, challengeId uuid.UUI
 		l.Error("failed to get challenge from store", zap.String("challenge_id", challengeId.String()), zap.Error(err))
 		return nil, ErrInternal
 	}
+	l.Info("decrypting challenge",
+		zap.Any("solvedChallenge", solvedChallenge),
+		zap.Any("challenge", challenge.Challenge),
+		zap.Binary("userKey", challenge.User.Key),
+	)
 
 	decryptedChallenge, err := crypto.AESGCMDecryptWithKey(challenge.User.Key, solvedChallenge)
 	if err != nil {
@@ -136,15 +142,8 @@ func (c *ChallengerV1) VerifyRegistration(ctx context.Context, username string, 
 		l.Warn("decrypted secret does not match username", zap.String("decryptedSecret", string(decryptedSecret)), zap.String("username", username))
 		return [crypto.SALT_SIZE]byte{}, ErrInvalidRegistration
 	}
-	
-    usernameBytes := make([]byte, 8)
-	copy(usernameBytes, []byte(username))
-	seed := binary.LittleEndian.Uint64(usernameBytes)
-	rng := crypto.NewPCG32(seed, 0)
 
-	salt := make([]byte, crypto.SALT_SIZE)
-	rng.Read(salt)
-
+	salt := GenerateSalt(username)
 	givenSalt, _, _, err := crypto.DecodeAESGCM(secret)
 	if err != nil {
 		l.Warn("failed to decode secret", zap.Error(err))

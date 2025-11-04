@@ -14,6 +14,23 @@ components:
       in: cookie
       name: OKEY
   schemas:
+    VerifyKeyRequest:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
+          format: byte
+          minLength: 1
+          maxLength: 1024
+    VerifyKeyResp:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
     RefreshRequest:
       required:
         - refresh_token
@@ -49,31 +66,37 @@ components:
     ChallengeServerResponse:
       type: object
       required:
-        - base64Challenge
+        - challenge
         - id
-        - base64Salt
+        - salt
       properties:
         id:
           type: string
           format: uuid
-        base64Challenge:
-          type: string
-          minLength: 1
-          maxLength: 1024
-        base64Salt:
-          type: string
-          minLength: 1
-          maxLength: 1024
+        challenge:
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 1024
+        salt:
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 1024
     ChallengeClientResponse:
       type: object
       required:
         - id
-        - base64Challenge
+        - challenge
       properties:
-        base64Challenge:
-          type: string
-          minLength: 1
-          maxLength: 1024
+        challenge:
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 1024
         id:
           type: string
           format: uuid
@@ -99,26 +122,31 @@ components:
       type: object
       required:
       - username
-      - base64Key
+      - key
       - email
-      - encryptedSecret
+      - secret
+      - salt
       properties:
         username:
           type: string
           minLength: 1
           maxLength: 255
-        base64Key:
-          type: string
-          minLength: 1
-          maxLength: 1024
+        key:
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 1024
         email:
           type: string
           minLength: 1
           maxLength: 255
-        encryptedSecret:
-          type: string
-          minLength: 1
-          maxLength: 1024
+        secret:
+          type: array
+          items:
+            type: number
+          minItems: 1
+          maxItems: 1024
     RegistrationResponse:
       type: object
       required:
@@ -150,6 +178,36 @@ components:
         error:
           type: string
 paths:
+  /auth/authed:
+    get:
+      summary: tests if the user is authed
+      description: tests if the user is authed
+      operationId: isAuthed
+      responses:
+        '200':
+          description: User is authed
+        '401':
+          description: User is not authed
+  /auth/verify:
+    post:
+      summary: verify the given key
+      description: verify the given key
+      operationId: verifyKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyKeyRequest'
+      responses:
+        '200':
+          description: Successful verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyKeyResp'
+        '401':
+          description: Invalid credentials
   /auth/refresh:
     post:
       summary: Refresh token

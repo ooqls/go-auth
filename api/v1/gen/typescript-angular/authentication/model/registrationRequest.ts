@@ -11,8 +11,8 @@
 
 export interface RegistrationRequest { 
     username: string;
-    base64Key: string;
+    key: Array<number>;
     email: string;
-    encryptedSecret: string;
+    secret: Array<number>;
 }
 

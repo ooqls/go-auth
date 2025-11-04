@@ -3,13 +3,13 @@ package authentication
 import (
 	"context"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 
 	"github.com/ooqls/go-auth/api/v1/gen/gen_authentication"
+	"github.com/ooqls/go-auth/domain/v1/authentication"
 	"github.com/ooqls/go-crypto/crypto"
 )
 
@@ -38,13 +38,7 @@ func NewAuthenticationClient(c gen_authentication.Client) *AuthenticationClient 
 }
 
 func (c *AuthenticationClient) Register(ctx context.Context, email string, password string, username string) (*gen_authentication.RegisterResponse, error) {
-	usernameBytes := make([]byte, 8)
-	copy(usernameBytes, []byte(username))
-
-	seed := binary.LittleEndian.Uint64(usernameBytes)
-	salt := make([]byte, crypto.SALT_SIZE)
-	rng := crypto.NewPCG32(seed, 0)
-	rng.Read(salt)
+	salt := authentication.GenerateSalt(username)
 
 	key, err := crypto.DeriveAESGCMKey(password, [16]byte(salt))
 	if err != nil {
@@ -57,10 +51,10 @@ func (c *AuthenticationClient) Register(ctx context.Context, email string, passw
 	}
 
 	resp, err := c.c.Register(ctx, gen_authentication.RegisterJSONRequestBody{
-		Email:           email,
-		Base64Key:       base64.StdEncoding.EncodeToString(key),
-		Username:        username,
-		EncryptedSecret: base64.StdEncoding.EncodeToString(encrypted),
+		Email:        email,
+		Base64Key:    base64.StdEncoding.EncodeToString(key),
+		Username:     username,
+		Base64Secret: base64.StdEncoding.EncodeToString(encrypted),
 	})
 	if err != nil {
 		return nil, err

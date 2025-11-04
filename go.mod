@@ -2,6 +2,9 @@ module github.com/ooqls/go-auth
 
 go 1.25.0
 
+replace github.com/ooqls/go-app => ../go-app
+replace github.com/ooqls/go-crypto => ../go-crypto
+
 require (
 	github.com/eko/gocache/lib/v4 v4.2.1
 	github.com/elastic/go-elasticsearch/v8 v8.19.0
@@ -54,6 +57,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
 	github.com/getkin/kin-openapi v0.131.0 // indirect
+	github.com/gin-contrib/cors v1.7.6 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect

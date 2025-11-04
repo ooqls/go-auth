@@ -20,5 +20,8 @@ model/refreshResponse.ts
 model/registrationRequest.ts
 model/registrationResponse.ts
 model/tokenResponse.ts
+model/verifyKeyRequest.ts
+model/verifyKeyResp.ts
 param.ts
+provide-api.ts
 variables.ts
