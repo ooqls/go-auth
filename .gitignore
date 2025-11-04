@@ -13,3 +13,4 @@
 ./**/docs/**/*.less
 .openapi-generator
 .openapi-generator-ignore
+v1/auhtentication

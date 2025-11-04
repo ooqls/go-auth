@@ -864,13 +864,16 @@ ul.nav-tabs {
   }
 };
     defs["ChallengeClientResponse"] = {
-  "required" : [ "base64Challenge", "id" ],
+  "required" : [ "challenge", "id" ],
   "type" : "object",
   "properties" : {
-    "base64Challenge" : {
-      "maxLength" : 1024,
-      "minLength" : 1,
-      "type" : "string"
+    "challenge" : {
+      "maxItems" : 1024,
+      "minItems" : 1,
+      "type" : "array",
+      "items" : {
+        "type" : "number"
+      }
     },
     "id" : {
       "type" : "string",
@@ -879,22 +882,28 @@ ul.nav-tabs {
   }
 };
     defs["ChallengeServerResponse"] = {
-  "required" : [ "base64Challenge", "base64Salt", "id" ],
+  "required" : [ "challenge", "id", "salt" ],
   "type" : "object",
   "properties" : {
     "id" : {
       "type" : "string",
       "format" : "uuid"
     },
-    "base64Challenge" : {
-      "maxLength" : 1024,
-      "minLength" : 1,
-      "type" : "string"
+    "challenge" : {
+      "maxItems" : 1024,
+      "minItems" : 1,
+      "type" : "array",
+      "items" : {
+        "type" : "number"
+      }
     },
-    "base64Salt" : {
-      "maxLength" : 1024,
-      "minLength" : 1,
-      "type" : "string"
+    "salt" : {
+      "maxItems" : 1024,
+      "minItems" : 1,
+      "type" : "array",
+      "items" : {
+        "type" : "number"
+      }
     }
   }
 };
@@ -946,7 +955,7 @@ ul.nav-tabs {
   }
 };
     defs["RegistrationRequest"] = {
-  "required" : [ "base64Key", "email", "encryptedSecret", "username" ],
+  "required" : [ "email", "key", "salt", "secret", "username" ],
   "type" : "object",
   "properties" : {
     "username" : {
@@ -954,20 +963,26 @@ ul.nav-tabs {
       "minLength" : 1,
       "type" : "string"
     },
-    "base64Key" : {
-      "maxLength" : 1024,
-      "minLength" : 1,
-      "type" : "string"
+    "key" : {
+      "maxItems" : 1024,
+      "minItems" : 1,
+      "type" : "array",
+      "items" : {
+        "type" : "number"
+      }
     },
     "email" : {
       "maxLength" : 255,
       "minLength" : 1,
       "type" : "string"
     },
-    "encryptedSecret" : {
-      "maxLength" : 1024,
-      "minLength" : 1,
-      "type" : "string"
+    "secret" : {
+      "maxItems" : 1024,
+      "minItems" : 1,
+      "type" : "array",
+      "items" : {
+        "type" : "number"
+      }
     }
   }
 };
@@ -1001,6 +1016,27 @@ ul.nav-tabs {
     }
   }
 };
+    defs["VerifyKeyRequest"] = {
+  "required" : [ "key" ],
+  "type" : "object",
+  "properties" : {
+    "key" : {
+      "maxLength" : 1024,
+      "minLength" : 1,
+      "type" : "string",
+      "format" : "byte"
+    }
+  }
+};
+    defs["VerifyKeyResp"] = {
+  "required" : [ "success" ],
+  "type" : "object",
+  "properties" : {
+    "success" : {
+      "type" : "boolean"
+    }
+  }
+};
 
 
     var errs = {};
@@ -1021,6 +1057,9 @@ ul.nav-tabs {
             <li class="nav-fixed nav-header active" data-group="_"><a href="#api-_">API Summary</a></li>
 
                   <li class="nav-header" data-group="Default"><a href="#api-Default">API Methods - Default</a></li>
+                    <li data-group="Default" data-name="isAuthed" class="">
+                      <a href="#api-Default-isAuthed">isAuthed</a>
+                    </li>
                     <li data-group="Default" data-name="loginChallenge" class="">
                       <a href="#api-Default-loginChallenge">loginChallenge</a>
                     </li>
@@ -1032,6 +1071,9 @@ ul.nav-tabs {
                     </li>
                     <li data-group="Default" data-name="register" class="">
                       <a href="#api-Default-register">register</a>
+                    </li>
+                    <li data-group="Default" data-name="verifyKey" class="">
+                      <a href="#api-Default-verifyKey">verifyKey</a>
                     </li>
           </ul>
         </nav>
@@ -1056,6 +1098,376 @@ ul.nav-tabs {
         <div id="sections">
                 <section id="api-Default">
                   <h1>Default</h1>
+                    <div id="api-Default-isAuthed">
+                      <article id="api-Default-isAuthed-0" data-group="User" data-name="isAuthed" data-version="0">
+                        <div class="pull-left">
+                          <h1>isAuthed</h1>
+                          <p>tests if the user is authed</p>
+                        </div>
+                        <div class="pull-right"></div>
+                        <div class="clearfix"></div>
+                        <p></p>
+                        <p class="marked">tests if the user is authed</p>
+                        <p></p>
+                        <br />
+                        <pre class="prettyprint language-html prettyprinted" data-type="get"><code><span class="pln">/auth/authed</span></code></pre>
+                        <p>
+                          <h3>Usage and SDK Samples</h3>
+                        </p>
+                        <ul class="nav nav-tabs nav-tabs-examples">
+                          <li class="active"><a href="#examples-Default-isAuthed-0-curl">Curl</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-java">Java</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-dart">Dart</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-android">Android</a></li>
+                          <!--<li class=""><a href="#examples-Default-isAuthed-0-groovy">Groovy</a></li>-->
+                          <li class=""><a href="#examples-Default-isAuthed-0-objc">Obj-C</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-javascript">JavaScript</a></li>
+                          <!--<li class=""><a href="#examples-Default-isAuthed-0-angular">Angular</a></li>-->
+                          <li class=""><a href="#examples-Default-isAuthed-0-csharp">C#</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-php">PHP</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-perl">Perl</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-python">Python</a></li>
+                          <li class=""><a href="#examples-Default-isAuthed-0-rust">Rust</a></li>
+                        </ul>
+
+                        <div class="tab-content">
+                          <div class="tab-pane active" id="examples-Default-isAuthed-0-curl">
+                            <pre class="prettyprint"><code class="language-bsh">curl -X GET \
+ "https://localhost:8080/auth/authed"
+</code></pre>
+                          </div>
+                          <div class="tab-pane" id="examples-Default-isAuthed-0-java">
+                            <pre class="prettyprint"><code class="language-java">import org.openapitools.client.*;
+import org.openapitools.client.auth.*;
+import org.openapitools.client.model.*;
+import org.openapitools.client.api.DefaultApi;
+
+import java.io.File;
+import java.util.*;
+
+public class DefaultApiExample {
+    public static void main(String[] args) {
+
+        // Create an instance of the API class
+        DefaultApi apiInstance = new DefaultApi();
+
+        try {
+            apiInstance.isAuthed();
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DefaultApi#isAuthed");
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+                          </div>
+
+                          <div class="tab-pane" id="examples-Default-isAuthed-0-dart">
+                            <pre class="prettyprint"><code class="language-dart">import 'package:openapi/api.dart';
+
+final api_instance = DefaultApi();
+
+
+try {
+    final result = await api_instance.isAuthed();
+    print(result);
+} catch (e) {
+    print('Exception when calling DefaultApi->isAuthed: $e\n');
+}
+
+</code></pre>
+                          </div>
+
+                          <div class="tab-pane" id="examples-Default-isAuthed-0-android">
+                            <pre class="prettyprint"><code class="language-java">import org.openapitools.client.api.DefaultApi;
+
+public class DefaultApiExample {
+    public static void main(String[] args) {
+        DefaultApi apiInstance = new DefaultApi();
+
+        try {
+            apiInstance.isAuthed();
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DefaultApi#isAuthed");
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                          </div>
+  <!--
+  <div class="tab-pane" id="examples-Default-isAuthed-0-groovy">
+  <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+  </div> -->
+                            <div class="tab-pane" id="examples-Default-isAuthed-0-objc">
+                              <pre class="prettyprint"><code class="language-cpp">
+
+// Create an instance of the API class
+DefaultApi *apiInstance = [[DefaultApi alloc] init];
+
+// tests if the user is authed
+[apiInstance isAuthedWithCompletionHandler: 
+              ^(NSError* error) {
+    if (error) {
+        NSLog(@"Error: %@", error);
+    }
+}];
+</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-isAuthed-0-javascript">
+                              <pre class="prettyprint"><code class="language-js">var OpenApiSpecificationForAuth = require('open_api_specification_for_auth');
+
+// Create an instance of the API class
+var api = new OpenApiSpecificationForAuth.DefaultApi()
+var callback = function(error, data, response) {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log('API called successfully.');
+  }
+};
+api.isAuthed(callback);
+</code></pre>
+                            </div>
+
+                            <!--<div class="tab-pane" id="examples-Default-isAuthed-0-angular">
+              <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+            </div>-->
+                            <div class="tab-pane" id="examples-Default-isAuthed-0-csharp">
+                              <pre class="prettyprint"><code class="language-cs">using System;
+using System.Diagnostics;
+using Org.OpenAPITools.Api;
+using Org.OpenAPITools.Client;
+using Org.OpenAPITools.Model;
+
+namespace Example
+{
+    public class isAuthedExample
+    {
+        public void main()
+        {
+
+            // Create an instance of the API class
+            var apiInstance = new DefaultApi();
+
+            try {
+                // tests if the user is authed
+                apiInstance.isAuthed();
+            } catch (Exception e) {
+                Debug.Print("Exception when calling DefaultApi.isAuthed: " + e.Message );
+            }
+        }
+    }
+}
+</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-isAuthed-0-php">
+                              <pre class="prettyprint"><code class="language-php"><&#63;php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Create an instance of the API class
+$api_instance = new OpenAPITools\Client\Api\DefaultApi();
+
+try {
+    $api_instance->isAuthed();
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->isAuthed: ', $e->getMessage(), PHP_EOL;
+}
+?></code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-isAuthed-0-perl">
+                              <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
+use WWW::OPenAPIClient::Configuration;
+use WWW::OPenAPIClient::DefaultApi;
+
+# Create an instance of the API class
+my $api_instance = WWW::OPenAPIClient::DefaultApi->new();
+
+eval {
+    $api_instance->isAuthed();
+};
+if ($@) {
+    warn "Exception when calling DefaultApi->isAuthed: $@\n";
+}</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-isAuthed-0-python">
+                              <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
+import time
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Create an instance of the API class
+api_instance = openapi_client.DefaultApi()
+
+try:
+    # tests if the user is authed
+    api_instance.is_authed()
+except ApiException as e:
+    print("Exception when calling DefaultApi->isAuthed: %s\n" % e)</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-isAuthed-0-rust">
+                              <pre class="prettyprint"><code class="language-rust">extern crate DefaultApi;
+
+pub fn main() {
+
+    let mut context = DefaultApi::Context::default();
+    let result = client.isAuthed(&context).wait();
+
+    println!("{:?}", result);
+}
+</code></pre>
+                            </div>
+                          </div>
+
+                          <h2>Scopes</h2>
+                          <table>
+                            
+                          </table>
+
+                          <h2>Parameters</h2>
+
+
+
+
+
+
+                          <h2>Responses</h2>
+                            <h3 id="examples-Default-isAuthed-title-200"></h3>
+                            <p id="examples-Default-isAuthed-description-200" class="marked"></p>
+                            <script>
+                              var responseDefault200_description = `User is authed`;
+                              var responseDefault200_description_break = responseDefault200_description.indexOf('\n');
+                              if (responseDefault200_description_break == -1) {
+                                $("#examples-Default-isAuthed-title-200").text("Status: 200 - " + responseDefault200_description);
+                              } else {
+                                $("#examples-Default-isAuthed-title-200").text("Status: 200 - " + responseDefault200_description.substring(0, responseDefault200_description_break));
+                                $("#examples-Default-isAuthed-description-200").html(responseDefault200_description.substring(responseDefault200_description_break));
+                              }
+                            </script>
+
+
+                            <ul id="responses-detail-Default-isAuthed-200" class="nav nav-tabs nav-tabs-examples" >
+
+
+                            </ul>
+
+
+                            <div class="tab-content" id="responses-Default-isAuthed-200-wrapper" style='margin-bottom: 10px;'>
+                              <div class="tab-pane active" id="responses-Default-isAuthed-200-schema">
+                                <div id="responses-Default-isAuthed-schema-200" class="exampleStyle">
+                                  <script>
+                                    $(document).ready(function() {
+                                      var schemaWrapper = {
+  "description" : "User is authed"
+};
+                                      var schema = findNode('schema',schemaWrapper).schema;
+                                      if (!schema) {
+                                        schema = schemaWrapper.schema;
+                                      }
+                                      if (schema == null) {
+                                        return;
+                                      }
+                                      if (schema.$ref != null) {
+                                        schema = defsParser.$refs.get(schema.$ref);
+                                        if (schema.properties != null) {
+                                          Object.keys(schema.properties).forEach( (item) => {
+                                            if (schema.properties[item].$ref != null) {
+                                              schema.properties[item] = defsParser.$refs.get(schema.properties[item].$ref);
+                                            }
+                                          });
+                                        }
+                                      } else if (schema.items != null && schema.items.$ref != null) {
+                                        schema.items = defsParser.$refs.get(schema.items.$ref);
+                                      } else {
+                                        schemaWrapper.definitions = Object.assign({}, defs);
+                                        $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                          console.log(err);
+                                        });
+                                      }
+
+                                      var view = new JSONSchemaView(schema, 3);
+                                      $('#responses-Default-isAuthed-200-schema-data').val(JSON.stringify(schema));
+                                      var result = $('#responses-Default-isAuthed-schema-200');
+                                      result.empty();
+                                      result.append(view.render());
+                                    });
+                                  </script>
+                                </div>
+                                <input id='responses-Default-isAuthed-200-schema-data' type='hidden' value=''></input>
+                              </div>
+                            </div>
+                            <h3 id="examples-Default-isAuthed-title-401"></h3>
+                            <p id="examples-Default-isAuthed-description-401" class="marked"></p>
+                            <script>
+                              var responseDefault401_description = `User is not authed`;
+                              var responseDefault401_description_break = responseDefault401_description.indexOf('\n');
+                              if (responseDefault401_description_break == -1) {
+                                $("#examples-Default-isAuthed-title-401").text("Status: 401 - " + responseDefault401_description);
+                              } else {
+                                $("#examples-Default-isAuthed-title-401").text("Status: 401 - " + responseDefault401_description.substring(0, responseDefault401_description_break));
+                                $("#examples-Default-isAuthed-description-401").html(responseDefault401_description.substring(responseDefault401_description_break));
+                              }
+                            </script>
+
+
+                            <ul id="responses-detail-Default-isAuthed-401" class="nav nav-tabs nav-tabs-examples" >
+
+
+                            </ul>
+
+
+                            <div class="tab-content" id="responses-Default-isAuthed-401-wrapper" style='margin-bottom: 10px;'>
+                              <div class="tab-pane active" id="responses-Default-isAuthed-401-schema">
+                                <div id="responses-Default-isAuthed-schema-401" class="exampleStyle">
+                                  <script>
+                                    $(document).ready(function() {
+                                      var schemaWrapper = {
+  "description" : "User is not authed"
+};
+                                      var schema = findNode('schema',schemaWrapper).schema;
+                                      if (!schema) {
+                                        schema = schemaWrapper.schema;
+                                      }
+                                      if (schema == null) {
+                                        return;
+                                      }
+                                      if (schema.$ref != null) {
+                                        schema = defsParser.$refs.get(schema.$ref);
+                                        if (schema.properties != null) {
+                                          Object.keys(schema.properties).forEach( (item) => {
+                                            if (schema.properties[item].$ref != null) {
+                                              schema.properties[item] = defsParser.$refs.get(schema.properties[item].$ref);
+                                            }
+                                          });
+                                        }
+                                      } else if (schema.items != null && schema.items.$ref != null) {
+                                        schema.items = defsParser.$refs.get(schema.items.$ref);
+                                      } else {
+                                        schemaWrapper.definitions = Object.assign({}, defs);
+                                        $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                          console.log(err);
+                                        });
+                                      }
+
+                                      var view = new JSONSchemaView(schema, 3);
+                                      $('#responses-Default-isAuthed-401-schema-data').val(JSON.stringify(schema));
+                                      var result = $('#responses-Default-isAuthed-schema-401');
+                                      result.empty();
+                                      result.append(view.render());
+                                    });
+                                  </script>
+                                </div>
+                                <input id='responses-Default-isAuthed-401-schema-data' type='hidden' value=''></input>
+                              </div>
+                            </div>
+                        </article>
+                      </div>
+                      <hr>
                     <div id="api-Default-loginChallenge">
                       <article id="api-Default-loginChallenge-0" data-group="User" data-name="loginChallenge" data-version="0">
                         <div class="pull-left">
@@ -1549,7 +1961,7 @@ $(document).ready(function() {
  -H "Content-Type: application/json" \
  "https://localhost:8080/auth/login_challenge_response" \
  -d '{
-  &quot;base64Challenge&quot; : &quot;base64Challenge&quot;,
+  &quot;challenge&quot; : [ 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115 ],
   &quot;id&quot; : &quot;046b6c7f-0b8a-43b9-b35d-6489e6daee91&quot;
 }'
 </code></pre>
@@ -2517,8 +2929,8 @@ $(document).ready(function() {
  -H "Content-Type: application/json" \
  "https://localhost:8080/auth/registration" \
  -d '{
-  &quot;encryptedSecret&quot; : &quot;encryptedSecret&quot;,
-  &quot;base64Key&quot; : &quot;base64Key&quot;,
+  &quot;secret&quot; : [ 6.027456183070403, 6.027456183070403, 6.027456183070403, 6.027456183070403, 6.027456183070403 ],
+  &quot;key&quot; : [ 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115 ],
   &quot;email&quot; : &quot;email&quot;,
   &quot;username&quot; : &quot;username&quot;
 }'
@@ -3101,6 +3513,461 @@ $(document).ready(function() {
                                   </script>
                                 </div>
                                 <input id='responses-Default-register-400-schema-data' type='hidden' value=''></input>
+                              </div>
+                            </div>
+                        </article>
+                      </div>
+                      <hr>
+                    <div id="api-Default-verifyKey">
+                      <article id="api-Default-verifyKey-0" data-group="User" data-name="verifyKey" data-version="0">
+                        <div class="pull-left">
+                          <h1>verifyKey</h1>
+                          <p>verify the given key</p>
+                        </div>
+                        <div class="pull-right"></div>
+                        <div class="clearfix"></div>
+                        <p></p>
+                        <p class="marked">verify the given key</p>
+                        <p></p>
+                        <br />
+                        <pre class="prettyprint language-html prettyprinted" data-type="post"><code><span class="pln">/auth/verify</span></code></pre>
+                        <p>
+                          <h3>Usage and SDK Samples</h3>
+                        </p>
+                        <ul class="nav nav-tabs nav-tabs-examples">
+                          <li class="active"><a href="#examples-Default-verifyKey-0-curl">Curl</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-java">Java</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-dart">Dart</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-android">Android</a></li>
+                          <!--<li class=""><a href="#examples-Default-verifyKey-0-groovy">Groovy</a></li>-->
+                          <li class=""><a href="#examples-Default-verifyKey-0-objc">Obj-C</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-javascript">JavaScript</a></li>
+                          <!--<li class=""><a href="#examples-Default-verifyKey-0-angular">Angular</a></li>-->
+                          <li class=""><a href="#examples-Default-verifyKey-0-csharp">C#</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-php">PHP</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-perl">Perl</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-python">Python</a></li>
+                          <li class=""><a href="#examples-Default-verifyKey-0-rust">Rust</a></li>
+                        </ul>
+
+                        <div class="tab-content">
+                          <div class="tab-pane active" id="examples-Default-verifyKey-0-curl">
+                            <pre class="prettyprint"><code class="language-bsh">curl -X POST \
+ -H "Accept: application/json" \
+ -H "Content-Type: application/json" \
+ "https://localhost:8080/auth/verify" \
+ -d '{
+  &quot;key&quot; : &quot;key&quot;
+}'
+</code></pre>
+                          </div>
+                          <div class="tab-pane" id="examples-Default-verifyKey-0-java">
+                            <pre class="prettyprint"><code class="language-java">import org.openapitools.client.*;
+import org.openapitools.client.auth.*;
+import org.openapitools.client.model.*;
+import org.openapitools.client.api.DefaultApi;
+
+import java.io.File;
+import java.util.*;
+
+public class DefaultApiExample {
+    public static void main(String[] args) {
+
+        // Create an instance of the API class
+        DefaultApi apiInstance = new DefaultApi();
+        VerifyKeyRequest verifyKeyRequest = ; // VerifyKeyRequest | 
+
+        try {
+            VerifyKeyResp result = apiInstance.verifyKey(verifyKeyRequest);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DefaultApi#verifyKey");
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+                          </div>
+
+                          <div class="tab-pane" id="examples-Default-verifyKey-0-dart">
+                            <pre class="prettyprint"><code class="language-dart">import 'package:openapi/api.dart';
+
+final api_instance = DefaultApi();
+
+final VerifyKeyRequest verifyKeyRequest = new VerifyKeyRequest(); // VerifyKeyRequest | 
+
+try {
+    final result = await api_instance.verifyKey(verifyKeyRequest);
+    print(result);
+} catch (e) {
+    print('Exception when calling DefaultApi->verifyKey: $e\n');
+}
+
+</code></pre>
+                          </div>
+
+                          <div class="tab-pane" id="examples-Default-verifyKey-0-android">
+                            <pre class="prettyprint"><code class="language-java">import org.openapitools.client.api.DefaultApi;
+
+public class DefaultApiExample {
+    public static void main(String[] args) {
+        DefaultApi apiInstance = new DefaultApi();
+        VerifyKeyRequest verifyKeyRequest = ; // VerifyKeyRequest | 
+
+        try {
+            VerifyKeyResp result = apiInstance.verifyKey(verifyKeyRequest);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DefaultApi#verifyKey");
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                          </div>
+  <!--
+  <div class="tab-pane" id="examples-Default-verifyKey-0-groovy">
+  <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+  </div> -->
+                            <div class="tab-pane" id="examples-Default-verifyKey-0-objc">
+                              <pre class="prettyprint"><code class="language-cpp">
+
+// Create an instance of the API class
+DefaultApi *apiInstance = [[DefaultApi alloc] init];
+VerifyKeyRequest *verifyKeyRequest = ; // 
+
+// verify the given key
+[apiInstance verifyKeyWith:verifyKeyRequest
+              completionHandler: ^(VerifyKeyResp output, NSError* error) {
+    if (output) {
+        NSLog(@"%@", output);
+    }
+    if (error) {
+        NSLog(@"Error: %@", error);
+    }
+}];
+</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-verifyKey-0-javascript">
+                              <pre class="prettyprint"><code class="language-js">var OpenApiSpecificationForAuth = require('open_api_specification_for_auth');
+
+// Create an instance of the API class
+var api = new OpenApiSpecificationForAuth.DefaultApi()
+var verifyKeyRequest = ; // {VerifyKeyRequest} 
+
+var callback = function(error, data, response) {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log('API called successfully. Returned data: ' + data);
+  }
+};
+api.verifyKey(verifyKeyRequest, callback);
+</code></pre>
+                            </div>
+
+                            <!--<div class="tab-pane" id="examples-Default-verifyKey-0-angular">
+              <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+            </div>-->
+                            <div class="tab-pane" id="examples-Default-verifyKey-0-csharp">
+                              <pre class="prettyprint"><code class="language-cs">using System;
+using System.Diagnostics;
+using Org.OpenAPITools.Api;
+using Org.OpenAPITools.Client;
+using Org.OpenAPITools.Model;
+
+namespace Example
+{
+    public class verifyKeyExample
+    {
+        public void main()
+        {
+
+            // Create an instance of the API class
+            var apiInstance = new DefaultApi();
+            var verifyKeyRequest = new VerifyKeyRequest(); // VerifyKeyRequest | 
+
+            try {
+                // verify the given key
+                VerifyKeyResp result = apiInstance.verifyKey(verifyKeyRequest);
+                Debug.WriteLine(result);
+            } catch (Exception e) {
+                Debug.Print("Exception when calling DefaultApi.verifyKey: " + e.Message );
+            }
+        }
+    }
+}
+</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-verifyKey-0-php">
+                              <pre class="prettyprint"><code class="language-php"><&#63;php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Create an instance of the API class
+$api_instance = new OpenAPITools\Client\Api\DefaultApi();
+$verifyKeyRequest = ; // VerifyKeyRequest | 
+
+try {
+    $result = $api_instance->verifyKey($verifyKeyRequest);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DefaultApi->verifyKey: ', $e->getMessage(), PHP_EOL;
+}
+?></code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-verifyKey-0-perl">
+                              <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
+use WWW::OPenAPIClient::Configuration;
+use WWW::OPenAPIClient::DefaultApi;
+
+# Create an instance of the API class
+my $api_instance = WWW::OPenAPIClient::DefaultApi->new();
+my $verifyKeyRequest = WWW::OPenAPIClient::Object::VerifyKeyRequest->new(); # VerifyKeyRequest | 
+
+eval {
+    my $result = $api_instance->verifyKey(verifyKeyRequest => $verifyKeyRequest);
+    print Dumper($result);
+};
+if ($@) {
+    warn "Exception when calling DefaultApi->verifyKey: $@\n";
+}</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-verifyKey-0-python">
+                              <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
+import time
+import openapi_client
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Create an instance of the API class
+api_instance = openapi_client.DefaultApi()
+verifyKeyRequest =  # VerifyKeyRequest | 
+
+try:
+    # verify the given key
+    api_response = api_instance.verify_key(verifyKeyRequest)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling DefaultApi->verifyKey: %s\n" % e)</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-Default-verifyKey-0-rust">
+                              <pre class="prettyprint"><code class="language-rust">extern crate DefaultApi;
+
+pub fn main() {
+    let verifyKeyRequest = ; // VerifyKeyRequest
+
+    let mut context = DefaultApi::Context::default();
+    let result = client.verifyKey(verifyKeyRequest, &context).wait();
+
+    println!("{:?}", result);
+}
+</code></pre>
+                            </div>
+                          </div>
+
+                          <h2>Scopes</h2>
+                          <table>
+                            
+                          </table>
+
+                          <h2>Parameters</h2>
+
+
+
+                            <div class="methodsubtabletitle">Body parameters</div>
+                            <table id="methodsubtable">
+                              <tr>
+                                <th width="150px">Name</th>
+                                <th>Description</th>
+                              </tr>
+                                <tr><td style="width:150px;">verifyKeyRequest <span style="color:red;">*</span></td>
+<td>
+<p class="marked"></p>
+<script>
+$(document).ready(function() {
+  var schemaWrapper = {
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/VerifyKeyRequest"
+      }
+    }
+  },
+  "required" : true
+};
+
+  var schema = findNode('schema',schemaWrapper).schema;
+  if (!schema) {
+    schema = schemaWrapper.schema;
+  }
+  if (schema.$ref != null) {
+    schema = defsParser.$refs.get(schema.$ref);
+  } else if (schema.items != null && schema.items.$ref != null) {
+    schema.items = defsParser.$refs.get(schema.items.$ref);
+  } else {
+    schemaWrapper.definitions = Object.assign({}, defs);
+    $RefParser.dereference(schemaWrapper).catch(function(err) {
+      console.log(err);
+    });
+  }
+
+  var view = new JSONSchemaView(schema,2,{isBodyParam: true});
+  var result = $('#d2e199_verifyKey_verifyKeyRequest');
+  result.empty();
+  result.append(view.render());
+});
+</script>
+<div id="d2e199_verifyKey_verifyKeyRequest"></div>
+</td>
+</tr>
+
+                            </table>
+
+
+
+                          <h2>Responses</h2>
+                            <h3 id="examples-Default-verifyKey-title-200"></h3>
+                            <p id="examples-Default-verifyKey-description-200" class="marked"></p>
+                            <script>
+                              var responseDefault200_description = `Successful verification`;
+                              var responseDefault200_description_break = responseDefault200_description.indexOf('\n');
+                              if (responseDefault200_description_break == -1) {
+                                $("#examples-Default-verifyKey-title-200").text("Status: 200 - " + responseDefault200_description);
+                              } else {
+                                $("#examples-Default-verifyKey-title-200").text("Status: 200 - " + responseDefault200_description.substring(0, responseDefault200_description_break));
+                                $("#examples-Default-verifyKey-description-200").html(responseDefault200_description.substring(responseDefault200_description_break));
+                              }
+                            </script>
+
+
+                            <ul id="responses-detail-Default-verifyKey-200" class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a data-toggle="tab" href="#responses-Default-verifyKey-200-schema">Schema</a>
+                                </li>
+
+
+
+
+                            </ul>
+
+
+                            <div class="tab-content" id="responses-Default-verifyKey-200-wrapper" style='margin-bottom: 10px;'>
+                              <div class="tab-pane active" id="responses-Default-verifyKey-200-schema">
+                                <div id="responses-Default-verifyKey-schema-200" class="exampleStyle">
+                                  <script>
+                                    $(document).ready(function() {
+                                      var schemaWrapper = {
+  "description" : "Successful verification",
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/VerifyKeyResp"
+      }
+    }
+  }
+};
+                                      var schema = findNode('schema',schemaWrapper).schema;
+                                      if (!schema) {
+                                        schema = schemaWrapper.schema;
+                                      }
+                                      if (schema == null) {
+                                        return;
+                                      }
+                                      if (schema.$ref != null) {
+                                        schema = defsParser.$refs.get(schema.$ref);
+                                        if (schema.properties != null) {
+                                          Object.keys(schema.properties).forEach( (item) => {
+                                            if (schema.properties[item].$ref != null) {
+                                              schema.properties[item] = defsParser.$refs.get(schema.properties[item].$ref);
+                                            }
+                                          });
+                                        }
+                                      } else if (schema.items != null && schema.items.$ref != null) {
+                                        schema.items = defsParser.$refs.get(schema.items.$ref);
+                                      } else {
+                                        schemaWrapper.definitions = Object.assign({}, defs);
+                                        $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                          console.log(err);
+                                        });
+                                      }
+
+                                      var view = new JSONSchemaView(schema, 3);
+                                      $('#responses-Default-verifyKey-200-schema-data').val(JSON.stringify(schema));
+                                      var result = $('#responses-Default-verifyKey-schema-200');
+                                      result.empty();
+                                      result.append(view.render());
+                                    });
+                                  </script>
+                                </div>
+                                <input id='responses-Default-verifyKey-200-schema-data' type='hidden' value=''></input>
+                              </div>
+                            </div>
+                            <h3 id="examples-Default-verifyKey-title-401"></h3>
+                            <p id="examples-Default-verifyKey-description-401" class="marked"></p>
+                            <script>
+                              var responseDefault401_description = `Invalid credentials`;
+                              var responseDefault401_description_break = responseDefault401_description.indexOf('\n');
+                              if (responseDefault401_description_break == -1) {
+                                $("#examples-Default-verifyKey-title-401").text("Status: 401 - " + responseDefault401_description);
+                              } else {
+                                $("#examples-Default-verifyKey-title-401").text("Status: 401 - " + responseDefault401_description.substring(0, responseDefault401_description_break));
+                                $("#examples-Default-verifyKey-description-401").html(responseDefault401_description.substring(responseDefault401_description_break));
+                              }
+                            </script>
+
+
+                            <ul id="responses-detail-Default-verifyKey-401" class="nav nav-tabs nav-tabs-examples" >
+
+
+                            </ul>
+
+
+                            <div class="tab-content" id="responses-Default-verifyKey-401-wrapper" style='margin-bottom: 10px;'>
+                              <div class="tab-pane active" id="responses-Default-verifyKey-401-schema">
+                                <div id="responses-Default-verifyKey-schema-401" class="exampleStyle">
+                                  <script>
+                                    $(document).ready(function() {
+                                      var schemaWrapper = {
+  "description" : "Invalid credentials"
+};
+                                      var schema = findNode('schema',schemaWrapper).schema;
+                                      if (!schema) {
+                                        schema = schemaWrapper.schema;
+                                      }
+                                      if (schema == null) {
+                                        return;
+                                      }
+                                      if (schema.$ref != null) {
+                                        schema = defsParser.$refs.get(schema.$ref);
+                                        if (schema.properties != null) {
+                                          Object.keys(schema.properties).forEach( (item) => {
+                                            if (schema.properties[item].$ref != null) {
+                                              schema.properties[item] = defsParser.$refs.get(schema.properties[item].$ref);
+                                            }
+                                          });
+                                        }
+                                      } else if (schema.items != null && schema.items.$ref != null) {
+                                        schema.items = defsParser.$refs.get(schema.items.$ref);
+                                      } else {
+                                        schemaWrapper.definitions = Object.assign({}, defs);
+                                        $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                          console.log(err);
+                                        });
+                                      }
+
+                                      var view = new JSONSchemaView(schema, 3);
+                                      $('#responses-Default-verifyKey-401-schema-data').val(JSON.stringify(schema));
+                                      var result = $('#responses-Default-verifyKey-schema-401');
+                                      result.empty();
+                                      result.append(view.render());
+                                    });
+                                  </script>
+                                </div>
+                                <input id='responses-Default-verifyKey-401-schema-data' type='hidden' value=''></input>
                               </div>
                             </div>
                         </article>

@@ -48,10 +48,21 @@ func main() {
 		Gin: app.GinConfig{
 			Enabled: true,
 			Port:    8080,
+			Cors: app.CorsConfig{
+				Enabled: true,
+				AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+				AllowWildcard: true,
+				AllowCredentials: true,
+				AllowAllOrigins: true,
+				AllowPrivateNetwork: true,
+				ExposeHeaders: []string{"Content-Type", "Authorization"},
+				Headers: []string{"Content-Type", "Authorization"},
+				MaxAge: 12,
+			},
 		},
 		LoggingAPI: app.LoggingAPIConfig{
 			Enabled: false,
-		},
+		},	
 		JWT: app.JWTConfig{
 			Enabled: true,
 			TokenConfigurations: []jwt.TokenConfiguration{
@@ -83,7 +94,7 @@ func main() {
 	authApp.OnStartup(func(ctx *app.AppContext) error {
 		db := sqlx.GetSQLX()
 		store.Register(authentication.Challenge{})
-
+		
 		authCfg, ok := ctx.AuthIssuerConfig()
 		if !ok {
 			return fmt.Errorf("auth issuer config not found")

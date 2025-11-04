@@ -90,12 +90,13 @@ export class DefaultService extends BaseService {
         }
 
         let localVarPath = `/auth/user`;
-        return this.httpClient.request<DeleteResponse>('delete', `${this.configuration.basePath}${localVarPath}`,
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<DeleteResponse>('delete', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: deleteRequest,
                 responseType: <any>responseType_,
-                withCredentials: this.configuration.withCredentials,
+                ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
                 observe: observe,
                 transferCache: localVarTransferCache,
@@ -139,11 +140,12 @@ export class DefaultService extends BaseService {
         }
 
         let localVarPath = `/auth/user`;
-        return this.httpClient.request<Array<User>>('get', `${this.configuration.basePath}${localVarPath}`,
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<Array<User>>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 responseType: <any>responseType_,
-                withCredentials: this.configuration.withCredentials,
+                ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
                 observe: observe,
                 transferCache: localVarTransferCache,
@@ -200,12 +202,13 @@ export class DefaultService extends BaseService {
         }
 
         let localVarPath = `/auth/user`;
-        return this.httpClient.request<CreateUserResponse>('post', `${this.configuration.basePath}${localVarPath}`,
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<CreateUserResponse>('post', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: createUserRequest,
                 responseType: <any>responseType_,
-                withCredentials: this.configuration.withCredentials,
+                ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
                 observe: observe,
                 transferCache: localVarTransferCache,
@@ -259,12 +262,13 @@ export class DefaultService extends BaseService {
         }
 
         let localVarPath = `/auth/user`;
-        return this.httpClient.request<User>('put', `${this.configuration.basePath}${localVarPath}`,
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<User>('put', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 body: updateRequest,
                 responseType: <any>responseType_,
-                withCredentials: this.configuration.withCredentials,
+                ...(withCredentials ? { withCredentials } : {}),
                 headers: localVarHeaders,
                 observe: observe,
                 transferCache: localVarTransferCache,

@@ -10,7 +10,7 @@
 
 
 export interface ChallengeClientResponse { 
-    base64Challenge: string;
+    challenge: Array<number>;
     id: string;
 }
 

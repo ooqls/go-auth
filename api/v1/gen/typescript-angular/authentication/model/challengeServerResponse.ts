@@ -11,7 +11,7 @@
 
 export interface ChallengeServerResponse { 
     id: string;
-    base64Challenge: string;
-    base64Salt: string;
+    challenge: Array<number>;
+    salt: Array<number>;
 }
 

@@ -9,3 +9,5 @@ export * from './refreshResponse';
 export * from './registrationRequest';
 export * from './registrationResponse';
 export * from './tokenResponse';
+export * from './verifyKeyRequest';
+export * from './verifyKeyResp';
