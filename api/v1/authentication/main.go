@@ -116,7 +116,7 @@ func main() {
 		cacheFactory := factory.NewRedisCacheFactory(*redis.GetConnection())
 		authenticator := authentication.NewAuthenticatorV1(authIssuer, refreshIssuer, cacheFactory, challenger, []string{"auth"})
 		userService := usersvc.NewUserServiceImpl(ua, userR, userW)
-		server := NewAuthenticationServer(ctx.L(), authenticator, userService)
+		server := NewAuthenticationServer(ctx.L(), authenticator, userService, false)
 
 		e := authApp.Features().Gin.Engine
 		gen_authentication.RegisterHandlers(e, server)

@@ -74,17 +74,11 @@ components:
           type: string
           format: uuid
         challenge:
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 1024
+          type: string
+          format: byte
         salt:
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 1024
+          type: string
+          format: byte
     ChallengeClientResponse:
       type: object
       required:
@@ -92,11 +86,8 @@ components:
         - challenge
       properties:
         challenge:
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 1024
+          type: string
+          format: byte
         id:
           type: string
           format: uuid
@@ -132,21 +123,15 @@ components:
           minLength: 1
           maxLength: 255
         key:
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 1024
+          type: string
+          format: byte
         email:
           type: string
           minLength: 1
           maxLength: 255
         secret:
-          type: array
-          items:
-            type: number
-          minItems: 1
-          maxItems: 1024
+          type: string
+          format: byte
     RegistrationResponse:
       type: object
       required:
