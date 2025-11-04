@@ -5,7 +5,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	gen "github.com/ooqls/go-auth/api/v1/gen/gen_authentication"
-	"github.com/ooqls/go-auth/common"
 	"github.com/ooqls/go-auth/domain/v1/authentication"
 	"github.com/ooqls/go-auth/domain/v1/authorization"
 	"github.com/ooqls/go-auth/domain/v1/serivce/users"
@@ -59,8 +58,8 @@ func (a *AuthenticationServerImpl) LoginChallenge(ctx *gin.Context) {
 	a.l.Sugar().Infof("Issued challenge for user %s, salt: %v", user.Username, user.Salt)
 	serverResponse := gen.ChallengeServerResponse{
 		Id:        challenge.ID,
-		Challenge: common.BytesToFloats(challenge.Challenge),
-		Salt:      common.BytesToFloats(challenge.User.Salt),
+		Challenge: challenge.Challenge,
+		Salt:      challenge.User.Salt,
 	}
 
 	ctx.JSON(200, serverResponse)
@@ -73,8 +72,8 @@ func (a *AuthenticationServerImpl) LoginChallengeResponse(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("challenge: %v == %v", request.Challenge, common.Float32ToBytes(request.Challenge))
-	okey, rkey, userID, err := a.Authenticator.ChallengeResponse(ctx, request.Id, common.Float32ToBytes(request.Challenge))
+	log.Printf("challenge: %v == %v", request.Challenge, request.Challenge)
+	okey, rkey, userID, err := a.Authenticator.ChallengeResponse(ctx, request.Id, request.Challenge)
 	if err != nil {
 		ctx.JSON(401, gin.H{"error": "Authentication failed"})
 		return
@@ -166,16 +165,16 @@ func (a AuthenticationServerImpl) Register(ctx *gin.Context) {
 
 	salt, err := a.Authenticator.ValidateRegistration(ctx, authentication.Registration{
 		Username: req.Username,
-		Key:      common.Float32ToBytes(req.Key),
+		Key:      req.Key,
 		Email:    req.Email,
-		Secret:   common.Float32ToBytes(req.Secret),
+		Secret:   req.Secret,
 	})
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "failed to validate registration"})
 		return
 	}
 
-	user, err = a.userService.CreateUser(authCtx, req.Email, common.Float32ToBytes(req.Key), salt[:], req.Username)
+	user, err = a.userService.CreateUser(authCtx, req.Email, req.Key, salt[:], req.Username)
 	if err != nil {
 		ctx.JSON(400, gin.H{"error": "failed to create user"})
 		return

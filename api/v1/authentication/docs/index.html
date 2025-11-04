@@ -868,12 +868,8 @@ ul.nav-tabs {
   "type" : "object",
   "properties" : {
     "challenge" : {
-      "maxItems" : 1024,
-      "minItems" : 1,
-      "type" : "array",
-      "items" : {
-        "type" : "number"
-      }
+      "type" : "string",
+      "format" : "byte"
     },
     "id" : {
       "type" : "string",
@@ -890,20 +886,12 @@ ul.nav-tabs {
       "format" : "uuid"
     },
     "challenge" : {
-      "maxItems" : 1024,
-      "minItems" : 1,
-      "type" : "array",
-      "items" : {
-        "type" : "number"
-      }
+      "type" : "string",
+      "format" : "byte"
     },
     "salt" : {
-      "maxItems" : 1024,
-      "minItems" : 1,
-      "type" : "array",
-      "items" : {
-        "type" : "number"
-      }
+      "type" : "string",
+      "format" : "byte"
     }
   }
 };
@@ -964,12 +952,8 @@ ul.nav-tabs {
       "type" : "string"
     },
     "key" : {
-      "maxItems" : 1024,
-      "minItems" : 1,
-      "type" : "array",
-      "items" : {
-        "type" : "number"
-      }
+      "type" : "string",
+      "format" : "byte"
     },
     "email" : {
       "maxLength" : 255,
@@ -977,12 +961,8 @@ ul.nav-tabs {
       "type" : "string"
     },
     "secret" : {
-      "maxItems" : 1024,
-      "minItems" : 1,
-      "type" : "array",
-      "items" : {
-        "type" : "number"
-      }
+      "type" : "string",
+      "format" : "byte"
     }
   }
 };
@@ -1961,7 +1941,7 @@ $(document).ready(function() {
  -H "Content-Type: application/json" \
  "https://localhost:8080/auth/login_challenge_response" \
  -d '{
-  &quot;challenge&quot; : [ 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115 ],
+  &quot;challenge&quot; : &quot;challenge&quot;,
   &quot;id&quot; : &quot;046b6c7f-0b8a-43b9-b35d-6489e6daee91&quot;
 }'
 </code></pre>
@@ -2929,8 +2909,8 @@ $(document).ready(function() {
  -H "Content-Type: application/json" \
  "https://localhost:8080/auth/registration" \
  -d '{
-  &quot;secret&quot; : [ 6.027456183070403, 6.027456183070403, 6.027456183070403, 6.027456183070403, 6.027456183070403 ],
-  &quot;key&quot; : [ 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115, 0.8008281904610115 ],
+  &quot;secret&quot; : &quot;secret&quot;,
+  &quot;key&quot; : &quot;key&quot;,
   &quot;email&quot; : &quot;email&quot;,
   &quot;username&quot; : &quot;username&quot;
 }'

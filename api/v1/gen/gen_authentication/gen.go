@@ -23,15 +23,15 @@ const (
 
 // ChallengeClientResponse defines model for ChallengeClientResponse.
 type ChallengeClientResponse struct {
-	Challenge []float32          `json:"challenge"`
+	Challenge []byte             `json:"challenge"`
 	Id        openapi_types.UUID `json:"id"`
 }
 
 // ChallengeServerResponse defines model for ChallengeServerResponse.
 type ChallengeServerResponse struct {
-	Challenge []float32          `json:"challenge"`
+	Challenge []byte             `json:"challenge"`
 	Id        openapi_types.UUID `json:"id"`
-	Salt      []float32          `json:"salt"`
+	Salt      []byte             `json:"salt"`
 }
 
 // ErrorResponse defines model for ErrorResponse.
@@ -51,10 +51,10 @@ type RefreshRequest struct {
 
 // RegistrationRequest defines model for RegistrationRequest.
 type RegistrationRequest struct {
-	Email    string    `json:"email"`
-	Key      []float32 `json:"key"`
-	Secret   []float32 `json:"secret"`
-	Username string    `json:"username"`
+	Email    string `json:"email"`
+	Key      []byte `json:"key"`
+	Secret   []byte `json:"secret"`
+	Username string `json:"username"`
 }
 
 // RegistrationResponse defines model for RegistrationResponse.
@@ -160,8 +160,8 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// IsAuthed request
-	IsAuthed(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetAuthAuthed request
+	GetAuthAuthed(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// LoginChallengeWithBody request with any body
 	LoginChallengeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -189,8 +189,8 @@ type ClientInterface interface {
 	VerifyKey(ctx context.Context, body VerifyKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) IsAuthed(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewIsAuthedRequest(c.Server)
+func (c *Client) GetAuthAuthed(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAuthAuthedRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -321,8 +321,8 @@ func (c *Client) VerifyKey(ctx context.Context, body VerifyKeyJSONRequestBody, r
 	return c.Client.Do(req)
 }
 
-// NewIsAuthedRequest generates requests for IsAuthed
-func NewIsAuthedRequest(server string) (*http.Request, error) {
+// NewGetAuthAuthedRequest generates requests for GetAuthAuthed
+func NewGetAuthAuthedRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -591,8 +591,8 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// IsAuthedWithResponse request
-	IsAuthedWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*IsAuthedResponse, error)
+	// GetAuthAuthedWithResponse request
+	GetAuthAuthedWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAuthAuthedResponse, error)
 
 	// LoginChallengeWithBodyWithResponse request with any body
 	LoginChallengeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LoginChallengeResponse, error)
@@ -620,13 +620,13 @@ type ClientWithResponsesInterface interface {
 	VerifyKeyWithResponse(ctx context.Context, body VerifyKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*VerifyKeyResponse, error)
 }
 
-type IsAuthedResponse struct {
+type GetAuthAuthedResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 }
 
 // Status returns HTTPResponse.Status
-func (r IsAuthedResponse) Status() string {
+func (r GetAuthAuthedResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -634,7 +634,7 @@ func (r IsAuthedResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r IsAuthedResponse) StatusCode() int {
+func (r GetAuthAuthedResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -750,13 +750,13 @@ func (r VerifyKeyResponse) StatusCode() int {
 	return 0
 }
 
-// IsAuthedWithResponse request returning *IsAuthedResponse
-func (c *ClientWithResponses) IsAuthedWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*IsAuthedResponse, error) {
-	rsp, err := c.IsAuthed(ctx, reqEditors...)
+// GetAuthAuthedWithResponse request returning *GetAuthAuthedResponse
+func (c *ClientWithResponses) GetAuthAuthedWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAuthAuthedResponse, error) {
+	rsp, err := c.GetAuthAuthed(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseIsAuthedResponse(rsp)
+	return ParseGetAuthAuthedResponse(rsp)
 }
 
 // LoginChallengeWithBodyWithResponse request with arbitrary body returning *LoginChallengeResponse
@@ -844,15 +844,15 @@ func (c *ClientWithResponses) VerifyKeyWithResponse(ctx context.Context, body Ve
 	return ParseVerifyKeyResponse(rsp)
 }
 
-// ParseIsAuthedResponse parses an HTTP response from a IsAuthedWithResponse call
-func ParseIsAuthedResponse(rsp *http.Response) (*IsAuthedResponse, error) {
+// ParseGetAuthAuthedResponse parses an HTTP response from a GetAuthAuthedWithResponse call
+func ParseGetAuthAuthedResponse(rsp *http.Response) (*GetAuthAuthedResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &IsAuthedResponse{
+	response := &GetAuthAuthedResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -981,7 +981,7 @@ func ParseVerifyKeyResponse(rsp *http.Response) (*VerifyKeyResponse, error) {
 type ServerInterface interface {
 	// tests if the user is authed
 	// (GET /auth/authed)
-	IsAuthed(c *gin.Context)
+	GetAuthAuthed(c *gin.Context)
 	// Requests a challenge from the server to login
 	// (POST /auth/login_challenge)
 	LoginChallenge(c *gin.Context)
@@ -1008,8 +1008,8 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// IsAuthed operation middleware
-func (siw *ServerInterfaceWrapper) IsAuthed(c *gin.Context) {
+// GetAuthAuthed operation middleware
+func (siw *ServerInterfaceWrapper) GetAuthAuthed(c *gin.Context) {
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1018,7 +1018,7 @@ func (siw *ServerInterfaceWrapper) IsAuthed(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.IsAuthed(c)
+	siw.Handler.GetAuthAuthed(c)
 }
 
 // LoginChallenge operation middleware
@@ -1115,7 +1115,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/auth/authed", wrapper.IsAuthed)
+	router.GET(options.BaseURL+"/auth/authed", wrapper.GetAuthAuthed)
 	router.POST(options.BaseURL+"/auth/login_challenge", wrapper.LoginChallenge)
 	router.POST(options.BaseURL+"/auth/login_challenge_response", wrapper.LoginChallengeResponse)
 	router.POST(options.BaseURL+"/auth/refresh", wrapper.RefreshToken)
