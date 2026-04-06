@@ -1,0 +1,277 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI specification for auth
+  version: 1.0.0
+  description: This is the OpenAPI specification for the auth service.
+servers:
+  - url: https://localhost:8080
+    description: Local server
+  - url: https://auth:8080
+components:
+  securitySchemes:
+    bearerAuth: # arbitrary name for the security scheme
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CreateRoleRequest:
+      type: object
+      required:
+      - name
+      - description
+      - hierarchy
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        hierarchy:
+          type: integer
+    CreatePermissionRequest:
+      type: object
+      required:
+      - name
+      - description
+      properties:
+        permissions:
+          type: array
+          items:
+            $ref: "schemas.yaml#/components/schemas/Permission" 
+    DeletePermissionRequest:
+      type: object
+      required:
+      - permissions
+      properties:
+        permissions:
+          type: array
+          items:
+            $ref: "schemas.yaml#/components/schemas/Permission"
+    CreateRoleResponse:
+      type: object
+      required:
+      - id
+      properties:
+        id:
+          type: string
+          format: uuid
+    UpdateRoleRequest:
+      type: object
+      required:
+      - id
+      - name
+      - description
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+    AssignPermissionRequest:
+      type: object
+      properties:
+        role_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        permission_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    UnassignPermissionRequest:
+      type: object
+      properties:
+        role_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        permission_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+paths:
+  /auth/roles:
+    get:
+      summary: Get all roles
+      description: Get all roles
+      operationId: getAuthRoles
+      parameters:
+        - name: page
+          in: query
+          description: The page number
+          required: false
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: The page size
+          required: false
+          schema:
+            type: integer
+      tags:
+        - roles
+      responses:
+        '200':
+          description: Successful role retrieval
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "schemas.yaml#/components/schemas/Role"
+        '401':
+          description: Invalid credentials
+  /auth/role/{id}:
+    get:
+      operationId: getAuthRole
+      parameters:
+        - name: id
+          in: path
+          description: The role ID
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful role retrieval
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/Role"
+        '401':
+          description: Invalid credentials
+  /auth/role:
+    post:
+      operationId: createAuthRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful role creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateRoleResponse"
+        '401':
+          description: Invalid credentials
+    put:
+      operationId: updateAuthRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "schemas.yaml#/components/schemas/UpdateRequest"
+      responses:
+        '200':
+          description: Successful role update
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/Role"
+        '401':
+          description: Invalid credentials
+    delete:
+      operationId: deleteAuthRole
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "schemas.yaml#/components/schemas/DeleteRequest"
+      responses:
+        '200':
+          description: Successful role deletion
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/DeleteResponse"
+        '401':
+          description: Invalid credentials
+  /auth/role/permissions:
+    post:
+      operationId: AssignRolePermissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignPermissionRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful permission addition
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/Role"
+        '401':
+          description: Invalid credentials
+    delete:
+      operationId: UnassignRolePermissions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnassignPermissionRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful permission deletion
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/Role"
+        '401':
+          description: Invalid credentials
+  /auth/permissions:
+    get:
+      operationId: getAuthPermissions
+      parameters:
+        - name: page
+          in: query
+          description: The page number
+          required: false
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          description: The page size
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful permission retrieval
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "schemas.yaml#/components/schemas/Permission"
+        '401':
+          description: Invalid credentials
+    post:
+      operationId: createAuthPermission
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePermissionRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful permission creation
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/Permission"
+        '401':
+          description: Invalid credentials

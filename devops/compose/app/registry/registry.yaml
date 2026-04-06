@@ -1,0 +1,32 @@
+valkeys:
+  name: valkey
+  host: valkey
+  port: 6379
+  tls:
+    enabled: true
+    cert_path: /config/tls/server.crt
+    key_path: /config/tls/server.key
+    ca_path: /config/tls/ca.crt
+    insecure_skip_tls_verify: true
+  auth:
+    enabled: true
+    username: "admin"
+    password: "admin"
+  extra: {}
+  database: "1"
+postgres:
+  name: postgres
+  host: db
+  port: 5432
+  tls:
+    enabled: true
+    cert_path: /config/tls/server.crt
+    key_path: /config/tls/server.key
+    ca_path: /config/tls/ca.crt
+    insecure_skip_tls_verify: true
+  auth:
+    enabled: false
+    username: "admin"
+    password: "admin"
+  extra: {}
+  database: appdb

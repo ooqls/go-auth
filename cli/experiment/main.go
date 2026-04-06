@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"log"
 
-	"github.com/ooqls/go-crypto/crypto"
+	"github.com/ooqls/getset/crypto/crypto"
 )
 
 func GenerateSalt(username string) []byte {

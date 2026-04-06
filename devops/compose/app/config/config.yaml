@@ -1,0 +1,72 @@
+logging_api:
+  enabled: false
+  port: 0
+gin:
+  enabled: true
+  port: 8080
+  cors:
+    enabled: true
+    origins:
+    - http://localhost:4200
+    - http://auth:8080
+    allow_credentials: true
+    expose_headers:
+    - Content-Length
+    - Content-Type
+    - X-User-Id
+    headers:
+    - Origin
+    - Content-Length
+    - Content-Type
+    - Authorization
+    - X-User-Id
+    allow_methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    - OPTIONS
+docs:
+  enabled: true
+  docs_api_path: /api/v1/docs
+  docs_dir: /app/docs
+tls:
+  enabled: false
+  ca_path: /config/tls/ca.crt
+  cert_file: /config/tls/server.crt
+  key_file: /config/tls/server.key
+jwt:
+  enabled: true
+  rsa_key_path: /config/jwt/jwt.key
+  rsa_pub_key_path: /config/jwt/jwt.pub
+  token_configuration_paths: []
+  token_configurations:
+  - audience:
+    - auth
+    issuer: auth
+    id_gen_type: ""
+    validity_duration_seconds: 3600
+  - audience:
+    - refresh
+    issuer: refresh
+    id_gen_type: ""
+    validity_duration_seconds: 3600
+sql:
+  enabled: true
+  sql_package: SQLX
+  sql_files_dirs:
+  - /migrations/
+registry:
+  enabled: true
+  path: /config/registry/registry.yaml
+health:
+  enabled: false
+  path: ""
+  interval: 0
+http:
+  enabled: false
+  port: 0
+rsa:
+  enabled: false
+  private_key_path: ""
+  public_key_path: ""

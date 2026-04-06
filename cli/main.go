@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ooqls/go-auth/api/v1/gen/gen_authentication"
-	"github.com/ooqls/go-auth/cli/authentication"
+	"github.com/ooqls/go-auth/v1/authentication/authenticationapi/gen_authentication"
+	"github.com/ooqls/go-auth/v1/authentication/authenticationcli"
 )
 
 func unmarshal(resp *http.Response, target interface{}) error {
@@ -26,7 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	authCli := authentication.NewAuthenticationClient(*c)
+	authCli := authenticationcli.NewAuthenticationClient(*c)
 
 	resp, err := authCli.Register(context.Background(), "test@test.com", "test", "test2")
 	if err != nil {
