@@ -1,0 +1,66 @@
+logging_api:
+  enabled: false
+  port: 0
+gin:
+  enabled: true
+  port: 8080
+  cors:
+    enabled: false
+    allow_all_origins: false
+    origins: []
+    methods: []
+    headers: []
+    expose_headers: []
+    allow_credentials: false
+    allow_wildcard: false
+    allow_browser_extensions: false
+    allow_web_sockets: false
+    allow_files: false
+    allow_private_network: false
+    max_age: 0
+docs:
+  enabled: true
+  docs_api_path: /api/v1/docs
+  docs_dir: /app/docs/
+  docs_port: 0
+server:
+  enabled: false
+  port: 0
+tls:
+  enabled: true
+  ca_path: ""
+  cert_file: /app/tls/server.pem
+  key_file: /app/tls/server.key.pem
+jwt:
+  enabled: true
+  rsa_key_path: /app/jwt/jwt.key.pem
+  rsa_pub_key_path: /app/jwt/jwt.pub.key.pem
+  token_configuration_paths: []
+  token_configurations:
+  - audience:
+    - auth
+    issuer: auth
+    id_gen_type: ""
+    validity_duration_seconds: 0
+sql:
+  enabled: true
+  sql_package: SQLX
+  sql_files_dirs:
+  - /app/migrations/
+  sql_files: []
+  create_table_stmts: []
+  create_index_stmts: []
+registry:
+  enabled: true
+  path: /app/registry/registry.yaml
+health:
+  enabled: false
+  path: ""
+  interval: 0
+http:
+  enabled: false
+  port: 0
+rsa:
+  enabled: false
+  private_key_path: ""
+  public_key_path: ""

@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  redis:
+    image: bitnami/redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    environment:
+      # Disable Bitnami’s password requirement so config file controls auth
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      # Persistent Redis data
+      - redis_data:/bitnami
+
+      # Load custom redis.conf on first startup
+      - ./redis.conf:/opt/bitnami/redis/mounted-etc/redis.conf
+
+      # ACL file referenced by redis.conf
+      - ./users.acl:/opt/bitnami/redis/mounted-etc/users.acl
+
+volumes:
+  redis_data:

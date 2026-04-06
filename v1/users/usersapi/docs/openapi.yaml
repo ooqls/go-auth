@@ -1,0 +1,150 @@
+openapi: 3.0.0
+info:
+  title: Users
+  version: 1.0.0
+components:
+  schemas:
+    CreateUserRequest:
+      type: object
+      required:
+      - username
+      - email
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          minLength: 1
+          maxLength: 255
+        key:
+          type: string
+          format: byte
+          minLength: 32
+          maxLength: 512
+        salt:
+          type: string
+          format: byte
+          minLength: 16
+          maxLength: 256
+paths:
+  /auth/user/{id}:
+    get:
+      operationId: getUserByID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful user retrieval
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/User"
+        '404':
+          description: User not found
+        '401':
+          description: Invalid credentials
+    put:
+      operationId: updateUserByID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "schemas.yaml#/components/schemas/UpdateRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful user update
+        '401':
+          description: Invalid credentials
+    delete:
+      operationId: deleteUserByID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful user deletion
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/DeleteResponse"
+        '401':
+          description: Invalid credentials
+        '404':
+          description: User not found
+  /auth/user:
+    get:
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Successful user retrieval
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "schemas.yaml#/components/schemas/User"
+        '401':
+          description: Invalid credentials
+        '404':
+          description: User not found
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+        required: true
+      responses:
+        '200':
+          description: Successful user creation
+          content:
+            application/json:
+              schema:
+                $ref: "schemas.yaml#/components/schemas/User"
+        '401':
+          description: Invalid credentials
+  /auth/users:
+    get:
+      operationId: getUsers
+      parameters:
+        - name: page
+          in: query
+          description: The page number
+          required: false
+          schema:
+            type: integer
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful user retrieval
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "schemas.yaml#/components/schemas/User"

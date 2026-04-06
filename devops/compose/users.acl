@@ -1,0 +1,4 @@
+user default off
+
+user appuser on >appsecret +@all ~*
+user readonly on >readonlypass +@read -@write ~*

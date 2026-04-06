@@ -1,0 +1,105 @@
+services:
+  proxy:
+    image: nginx:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - auth
+      - roles
+      - users
+  resources:
+    image: samrreynolds4/base:main
+    restart: unless-stopped
+    command: ["/app/main", "--api", "resources", "--app-config", "/config/config/config.yaml"]
+    volumes:
+      - ./app:/config
+      - ./migrations:/migrations
+    depends_on:
+      - db
+      - valkey
+      - seed
+  permissions:
+    image: samrreynolds4/base:main
+    restart: unless-stopped
+    command: ["/app/main", "--api", "permissions", "--app-config", "/config/config/config.yaml"]
+    volumes:
+      - ./app:/config
+      - ./migrations:/migrations
+    depends_on:
+      - db
+      - valkey
+      - seed
+  roles:
+    image: samrreynolds4/base:main
+    restart: unless-stopped
+    command: ["/app/main", "--api", "roles", "--app-config", "/config/config/config.yaml"]
+    volumes:
+      - ./app:/config
+      - ./migrations:/migrations
+    depends_on:
+      - db
+      - valkey
+      - seed
+  auth:
+    image: samrreynolds4/auth:main
+    restart: unless-stopped
+    command: ["/app/main", "--api", "authentication", "--app-config", "/config/config/config.yaml"]
+    volumes:
+      - ./app:/config
+      - ./migrations:/migrations
+    depends_on:
+      - db
+      - valkey
+      - seed
+  users:
+    image: samrreynolds4/base:main
+    restart: unless-stopped
+    command: ["/app/main", "--api", "users", "--app-config", "/config/config/config.yaml"]
+    volumes:
+      - ./app:/config
+      - ./migrations:/migrations
+    depends_on:
+      - db
+      - valkey
+      - seed
+  seed:
+    image: samrreynolds4/seed:main
+    restart: "no"
+    command: ["/app/main", "--api", "seed", "--app-config", "/config/config/seed.yaml"]
+    volumes:
+      - ./app:/config
+      - ./migrations:/migrations
+    depends_on:
+      - db
+      - valkey
+
+# If you need databases, add the following as an example:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: appdb
+      POSTGRES_SSL: enabled
+      POSTGRES_CA_CERT: /tls/ca.crt
+      POSTGRES_SERVER_CERT: /tls/server.crt
+      POSTGRES_SERVER_KEY: /tls/server.key
+    ports:
+     - "5432:5432"
+    volumes:
+    - ./app/tls:/tls
+  valkey:
+    image: valkey/valkey:latest
+    command: ["valkey-server", "/usr/local/etc/valkey/valkey.conf"]
+    restart: unless-stopped
+    volumes:
+      - ./app/tls:/tls
+      - ./valkey/valkey.conf:/usr/local/etc/valkey/valkey.conf
+      - ./valkey/acl.conf:/usr/local/etc/valkey/acl.conf
+    ports:
+    - "6379:6379"
+

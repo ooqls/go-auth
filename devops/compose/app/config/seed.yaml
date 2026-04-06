@@ -1,0 +1,13 @@
+tls:
+  enabled: true
+  ca_path: /config/tls/ca.crt
+  cert_file: /config/tls/server.crt
+  key_file: /config/tls/server.key
+sql:
+  enabled: true
+  sql_package: SQLX
+  sql_files_dirs:
+  - /migrations/
+registry:
+  enabled: true
+  path: /config/registry/registry.yaml
