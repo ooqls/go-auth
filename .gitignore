@@ -13,4 +13,10 @@
 ./**/docs/**/*.less
 .openapi-generator
 .openapi-generator-ignore
-v1/auhtentication
+v1/base/base
+*.pem
+*.key
+*.crt
+*.csr
+*.pfx
+*.p12
