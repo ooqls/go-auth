@@ -22,5 +22,18 @@ func NewRolesServer(ctx *app.AppContext) (gen_roles.ServerInterface, error) {
 }
 
 func RegisterRolesHandlers(e *gin.Engine, server gen_roles.ServerInterface) {
-	gen_roles.RegisterHandlers(e, server)
+	g := e.Group("api/v1/")
+	gen_roles.RegisterHandlers(g, server)
+}
+
+func RegisterRolesDocsHandler(e *gin.Engine, _ gen_roles.ServerInterface) {
+	g := e.Group("api/v1/")
+	rolesapi.RegisterDocsHandler(g)
+}
+
+func RolesHandlers() []RegisterFunc[gen_roles.ServerInterface] {
+	return []RegisterFunc[gen_roles.ServerInterface]{
+		RegisterRolesHandlers,
+		RegisterRolesDocsHandler,
+	}
 }

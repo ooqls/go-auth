@@ -1,0 +1,18 @@
+package resourcesapi
+
+import (
+	"embed"
+	"io/fs"
+
+	"github.com/gin-gonic/gin"
+	"github.com/ooqls/go-auth/v1/swaggerui"
+)
+
+//go:embed docs/openapi.yaml
+var docsFS embed.FS
+
+var openapiFS, _ = fs.Sub(docsFS, "docs")
+
+func RegisterDocsHandler(e gin.IRouter) {
+	swaggerui.RegisterDocsHandler(e, "Resources API", openapiFS)
+}

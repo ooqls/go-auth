@@ -18,5 +18,18 @@ func NewPermissionsServer(ctx *app.AppContext) (gen_permissions.ServerInterface,
 }
 
 func RegisterPermissionsHandlers(e *gin.Engine, server gen_permissions.ServerInterface) {
-	gen_permissions.RegisterHandlers(e, server)
+	g := e.Group("api/v1/")
+	gen_permissions.RegisterHandlers(g, server)
+}
+
+func RegisterPermissionsDocsHandler(e *gin.Engine, _ gen_permissions.ServerInterface) {
+	g := e.Group("api/v1/")
+	permissionsapi.RegisterDocsHandler(g)
+}
+
+func PermissionsHandlers() []RegisterFunc[gen_permissions.ServerInterface] {
+	return []RegisterFunc[gen_permissions.ServerInterface]{
+		RegisterPermissionsHandlers,
+		RegisterPermissionsDocsHandler,
+	}
 }

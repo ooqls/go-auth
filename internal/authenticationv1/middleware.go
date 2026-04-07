@@ -68,9 +68,8 @@ func TrustedMiddleware(
 		l.Info("userID", zap.String("userID", userID))
 		log.Printf("headers: %v", c.Request.Header)
 		if userID == "" {
-			l.Error("user ID is empty")
-			c.JSON(401, gin.H{"error": "Authentication failed"})
-			c.Abort()
+			c.Set("authorization_context", authorizationv1.NewUnauthenticatedContext(c))
+			c.Next()
 			return
 		}
 

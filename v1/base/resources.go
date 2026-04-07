@@ -15,5 +15,18 @@ func NewResourcesServer(ctx *app.AppContext) (gen_resources.ServerInterface, err
 }
 
 func RegisterResourcesHandlers(e *gin.Engine, server gen_resources.ServerInterface) {
-	gen_resources.RegisterHandlers(e, server)
+	g := e.Group("api/v1/")
+	gen_resources.RegisterHandlers(g, server)
+}
+
+func RegisterResourceDocsHandler(e *gin.Engine, _ gen_resources.ServerInterface) {
+	g := e.Group("api/v1/")
+	resourcesapi.RegisterDocsHandler(g)
+}
+
+func ResourceHandlers() []RegisterFunc[gen_resources.ServerInterface] {
+	return []RegisterFunc[gen_resources.ServerInterface]{
+		RegisterResourcesHandlers,
+		RegisterResourceDocsHandler,
+	}
 }
