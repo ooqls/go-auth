@@ -18,5 +18,18 @@ func NewUsersServer(ctx *app.AppContext) (gen_users.ServerInterface, error) {
 }
 
 func RegisterUsersHandlers(e *gin.Engine, server gen_users.ServerInterface) {
-	gen_users.RegisterHandlers(e, server)
+	g := e.Group("api/v1/")
+	gen_users.RegisterHandlers(g, server)
+}
+
+func RegisterUserDocsHandler(e *gin.Engine, _ gen_users.ServerInterface) {
+	g := e.Group("api/v1/")
+	usersapi.RegisterDocsHandler(g)
+}
+
+func UserHandlers() []RegisterFunc[gen_users.ServerInterface] {
+	return []RegisterFunc[gen_users.ServerInterface]{
+		RegisterUsersHandlers,
+		RegisterUserDocsHandler,
+	}
 }

@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/ooqls/getset/app/app"
 	"github.com/ooqls/getset/crypto/jwt"
+	"github.com/ooqls/go-auth/internal/schema"
 )
 
 func GetStandaloneAppConfig(port int) *app.AppConfig {
@@ -11,10 +12,12 @@ func GetStandaloneAppConfig(port int) *app.AppConfig {
 			Port: port,
 		},
 		SQLFiles: app.SQLFilesConfig{
-			Enabled:      true,
-			SQLPackage:   app.SQLXPackage,
-			SQLFilesDirs: []string{"./migrations/"},
+			Enabled:          true,
+			SQLPackage:       app.SQLXPackage,
+			SQLFilesDirs:     []string{"./migrations/"},
+			CreateTableStmts: []string{schema.Migration20260114144208Auth, schema.Migration20260309021330UserHighestRoleView},
 		},
+
 		Gin: app.GinConfig{
 			Enabled: true,
 			Port:    8080,
@@ -48,9 +51,12 @@ func GetStandaloneAppConfig(port int) *app.AppConfig {
 				},
 			},
 		},
+		Cache: app.CacheConfig{
+			Enabled:   true,
+			CacheType: "mem",
+		},
 		DocsConfig: app.DocsConfig{
 			Enabled:     true,
-			DocsDir:     "./docs/",
 			DocsApiPath: "/api/v1/docs",
 		},
 	}

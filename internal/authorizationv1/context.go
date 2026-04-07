@@ -50,6 +50,13 @@ func NewInternalOperationContext(ctx context.Context) Context {
 	}
 }
 
+func NewUnauthenticatedContext(ctx context.Context) Context {
+	return Context{
+		Context: ctx,
+		l:       log.NewLogger("unauthenticated_operation").With(zap.String("user_id", "unauthenticated")),
+	}
+}
+
 func (a *Context) IsInternalOperation() bool {
 	return a.internalOperation
 }

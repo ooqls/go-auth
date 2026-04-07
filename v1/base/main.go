@@ -35,27 +35,27 @@ func main() {
 	case string(ApiAuthentication):
 		app, err = BuildBaseGinApp(
 			NewAuthenticationServer,
-			RegisterAuthenticationHandlers,
+			AuthenticationHandlers(),
 		)
 	case string(ApiRoles):
 		app, err = BuildBaseGinApp(
 			NewRolesServer,
-			RegisterRolesHandlers,
+			RolesHandlers(),
 		)
 	case string(ApiUsers):
 		app, err = BuildBaseGinApp(
 			NewUsersServer,
-			RegisterUsersHandlers,
+			UserHandlers(),
 		)
 	case string(ApiPermissions):
 		app, err = BuildBaseGinApp(
 			NewPermissionsServer,
-			RegisterPermissionsHandlers,
+			PermissionsHandlers(),
 		)
 	case string(ApiResources):
 		app, err = BuildBaseGinApp(
 			NewResourcesServer,
-			RegisterResourcesHandlers,
+			ResourceHandlers(),
 		)
 	}
 	if err != nil {

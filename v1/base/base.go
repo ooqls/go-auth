@@ -22,6 +22,8 @@ var (
 
 var l *zap.Logger = log.NewLogger("base-startup")
 
+type RegisterFunc[T any] func(e *gin.Engine, server T)
+
 func init() {
 	flag.StringVar(&appConfigPath, "app-config", "", "path to app config")
 	flag.BoolVar(&standalone, "standalone", false, "run in standalone mode")
@@ -30,12 +32,13 @@ func init() {
 
 func BuildBaseGinApp[T any](
 	newServer func(ctx *app.AppContext) (T, error),
-	registerFunc func(e *gin.Engine, server T),
+	registerFuncs []RegisterFunc[T],
 	middlewares ...func(c *gin.Context)) (*app.App, error) {
 	var appConfig *app.AppConfig
 	var err error
 	if standalone {
 		appConfig = config.GetStandaloneAppConfig(8082)
+
 	} else {
 		appConfig, err = app.LoadConfig(appConfigPath)
 		if err != nil {
@@ -45,14 +48,15 @@ func BuildBaseGinApp[T any](
 
 	application := app.New("users", app.WithConfig(appConfig))
 
-	if testEnvironment {
+	if testEnvironment || standalone {
 		application.WithTestEnvironment(app.TestEnvironment{
-			Redis:    true,
-			Postgres: true,
+			Redis:         false,
+			Postgres:      true,
+			Elasticsearch: true,
 		})
 	}
 
-	application.OnStartup(func(ctx *app.AppContext) error {
+	application.OnRunning(func(ctx *app.AppContext) error {
 
 		server, err := newServer(ctx)
 		if err != nil {
@@ -66,7 +70,10 @@ func BuildBaseGinApp[T any](
 		for _, middleware := range middlewares {
 			e.Use(middleware)
 		}
-		registerFunc(e, server)
+
+		for _, registerFunc := range registerFuncs {
+			registerFunc(e, server)
+		}
 		return nil
 	})
 

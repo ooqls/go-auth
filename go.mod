@@ -5,13 +5,12 @@ go 1.25.0
 replace github.com/ooqls/getset => ../getset
 
 require (
-	github.com/eko/gocache/lib/v4 v4.2.2
 	github.com/elastic/go-elasticsearch/v8 v8.19.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
-	github.com/jmoiron/sqlx v1.4.0
+	github.com/jackc/pgx/v5 v5.7.6
 	github.com/oapi-codegen/runtime v1.1.2
 	github.com/ooqls/getset v0.1.4
 	github.com/pkg/errors v0.9.1
@@ -48,6 +47,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20240618133044-5a0af90af097 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
+	github.com/eko/gocache/lib/v4 v4.2.2 // indirect
 	github.com/eko/gocache/store/go_cache/v4 v4.2.3 // indirect
 	github.com/eko/gocache/store/redis/v4 v4.2.5 // indirect
 	github.com/eko/gocache/store/valkey/v4 v4.0.0-20251210114255-199a1cf8811d // indirect
@@ -72,7 +72,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.7.6 // indirect
+	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect

@@ -53,6 +53,19 @@ func NewAuthenticationServer(ctx *app.AppContext) (gen_authentication.ServerInte
 	return authenticationapi.NewAuthenticationServer(l, authService, false), nil
 }
 
-func RegisterAuthenticationHandlers(e *gin.Engine, server gen_authentication.ServerInterface) {
-	gen_authentication.RegisterHandlers(e, server)
+func RegisterV1AuthenticationHandlers(e *gin.Engine, server gen_authentication.ServerInterface) {
+	g := e.Group("api/v1/")
+	gen_authentication.RegisterHandlers(g, server)
+}
+
+func RegisterV1AuthenticationDocsHandler(e *gin.Engine, _ gen_authentication.ServerInterface) {
+	g := e.Group("api/v1/")
+	authenticationapi.RegisterDocsHandler(g)
+}
+
+func AuthenticationHandlers() []RegisterFunc[gen_authentication.ServerInterface] {
+	return []RegisterFunc[gen_authentication.ServerInterface]{
+		RegisterV1AuthenticationHandlers,
+		RegisterV1AuthenticationDocsHandler,
+	}
 }
