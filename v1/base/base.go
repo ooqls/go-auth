@@ -38,7 +38,6 @@ func BuildBaseGinApp[T any](
 	var err error
 	if standalone {
 		appConfig = config.GetStandaloneAppConfig(8082)
-
 	} else {
 		appConfig, err = app.LoadConfig(appConfigPath)
 		if err != nil {

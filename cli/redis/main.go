@@ -13,8 +13,8 @@ func main() {
 			Host: "localhost",
 			Port: 6379,
 			Auth: registry.Auth{
-				Username: "admin",
-				Password: "admin",
+				Username:     "admin",
+				PasswordFile: "password.txt",
 			},
 			TLS: &registry.TLSConfig{
 				Enabled:  true,

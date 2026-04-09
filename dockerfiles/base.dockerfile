@@ -6,11 +6,11 @@ COPY . ./
 
 RUN go mod download && go mod verify
 
-WORKDIR /app/api/v1/base
+WORKDIR /app/v1/base
 RUN go build -o main .
 
 FROM gcr.io/distroless/static-debian12:latest
 
 WORKDIR /app
-COPY --from=builder /app/api/v1/base/main .
+COPY --from=builder /app/v1/base/main .
 CMD ["./main"]

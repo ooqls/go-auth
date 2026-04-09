@@ -20,3 +20,5 @@ v1/base/base
 *.csr
 *.pfx
 *.p12
+
+.claude/
