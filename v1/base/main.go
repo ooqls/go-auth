@@ -18,6 +18,7 @@ const (
 	ApiUsers          Api = "users"
 	ApiPermissions    Api = "permissions"
 	ApiResources      Api = "resources"
+	ApiSeed           Api = "seed"
 )
 
 var api string
@@ -57,6 +58,8 @@ func main() {
 			NewResourcesServer,
 			ResourceHandlers(),
 		)
+	case string(ApiSeed):
+		app = Seed()
 	}
 	if err != nil {
 		l.Fatal("failed to build base app", zap.Error(err))
