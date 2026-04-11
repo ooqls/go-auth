@@ -2,6 +2,7 @@ package rolesgrpc
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	rolespb "github.com/ooqls/go-auth/gen/grpc/roles/v1"
@@ -133,9 +134,13 @@ func (s *Server) UpdateAuthRole(ctx context.Context, req *rolespb.UpdateAuthRole
 			}
 		case "update_hierarchy":
 			if h, ok := ev.GetData()["hierarchy"]; ok {
-				// Parse hierarchy from string
-				_ = h
-				// Role service handles int32 hierarchy
+				var parsed int64
+				_, err := fmt.Sscanf(h, "%d", &parsed)
+				if err != nil {
+					return nil, status.Error(codes.InvalidArgument, "invalid hierarchy value")
+				}
+				h32 := int32(parsed)
+				updateParams.Hierarchy = &h32
 			}
 		}
 	}
