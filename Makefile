@@ -11,6 +11,10 @@ build_all:
 
 build_base:
 	docker buildx build --platform linux/amd64,linux/arm64/v8 -t ${IMAGE_REPOSITORY}base:${IMAGE_TAG} -f ${DOCKERFILES}/base.dockerfile .
+
+ci_build_base:
+	docker build -t ${IMAGE_REPOSITORY}base:${IMAGE_TAG} -f ${DOCKERFILES}/base.dockerfile .
+
 push_base:
 	docker push ${IMAGE_REPOSITORY}base:${IMAGE_TAG}
 test:
