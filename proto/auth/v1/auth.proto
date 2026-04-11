@@ -1,0 +1,129 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/auth/v1;authpb";
+
+import "google/api/annotations.proto";
+
+// AuthService handles authentication operations.
+service AuthService {
+  // Tests if the caller is authenticated.
+  rpc IsAuthenticated(IsAuthenticatedRequest) returns (IsAuthenticatedResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/authed"
+    };
+  }
+
+  // Verifies the given encryption key.
+  rpc VerifyKey(VerifyKeyRequest) returns (VerifyKeyResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/verify"
+      body: "*"
+    };
+  }
+
+  // Refreshes an authentication token.
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/refresh"
+      body: "*"
+    };
+  }
+
+  // Requests a login challenge from the server.
+  rpc LoginChallenge(LoginChallengeRequest) returns (LoginChallengeResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login_challenge"
+      body: "*"
+    };
+  }
+
+  // Answers the login challenge.
+  rpc AnswerLoginChallenge(AnswerLoginChallengeRequest) returns (AnswerLoginChallengeResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login_challenge_response"
+      body: "*"
+    };
+  }
+
+  // Logs out the user.
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/logout"
+      body: "*"
+    };
+  }
+
+  // Registers a new user.
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/registration"
+      body: "*"
+    };
+  }
+}
+
+message IsAuthenticatedRequest {
+  string token = 1;
+}
+
+message IsAuthenticatedResponse {
+  string user_id = 1;
+}
+
+message VerifyKeyRequest {
+  bytes key = 1;
+}
+
+message VerifyKeyResponse {
+  bool success = 1;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string user_id = 1;
+  string auth_token = 2;
+}
+
+message LoginChallengeRequest {
+  string username = 1;
+}
+
+message LoginChallengeResponse {
+  string id = 1;
+  bytes challenge = 2;
+  bytes salt = 3;
+}
+
+message AnswerLoginChallengeRequest {
+  string id = 1;
+  bytes challenge = 2;
+}
+
+message AnswerLoginChallengeResponse {
+  string auth_token = 1;
+  string refresh_token = 2;
+  string user_id = 3;
+}
+
+message LogoutRequest {}
+
+message LogoutResponse {}
+
+message RegisterRequest {
+  string username = 1;
+  bytes key = 2;
+  string email = 3;
+  bytes secret = 4;
+  bytes salt = 5;
+}
+
+message RegisterResponse {
+  string auth_token = 1;
+  string refresh_token = 2;
+  string user_id = 3;
+}
