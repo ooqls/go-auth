@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package permissions.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/permissions/v1;permissionspb";
+
+import "google/api/annotations.proto";
+import "common/v1/common.proto";
+
+// PermissionsService manages permissions.
+service PermissionsService {
+  // Lists all permissions with pagination.
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/permission"
+    };
+  }
+
+  // Creates a new permission.
+  rpc CreatePermission(CreatePermissionRequest) returns (CreatePermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/permission"
+      body: "*"
+    };
+  }
+
+  // Deletes a permission.
+  rpc DeletePermission(DeletePermissionRequest) returns (DeletePermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/permission/delete"
+      body: "*"
+    };
+  }
+}
+
+message ListPermissionsRequest {
+  optional int32 page = 1;
+  optional int32 page_size = 2;
+}
+
+message ListPermissionsResponse {
+  repeated common.v1.Permission permissions = 1;
+}
+
+message CreatePermissionRequest {
+  common.v1.Permission permission = 1;
+}
+
+message CreatePermissionResponse {}
+
+message DeletePermissionRequest {
+  string name = 1;
+  string group = 2;
+  string kind = 3;
+}
+
+message DeletePermissionResponse {}

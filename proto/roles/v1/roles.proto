@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+package roles.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/roles/v1;rolespb";
+
+import "google/api/annotations.proto";
+import "common/v1/common.proto";
+
+// RolesService manages roles and their permissions.
+service RolesService {
+  // Lists all roles with pagination.
+  rpc GetAuthRoles(GetAuthRolesRequest) returns (GetAuthRolesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/roles"
+    };
+  }
+
+  // Gets a single role by ID.
+  rpc GetAuthRole(GetAuthRoleRequest) returns (GetAuthRoleResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/role/{id}"
+    };
+  }
+
+  // Creates a new role.
+  rpc CreateAuthRole(CreateAuthRoleRequest) returns (CreateAuthRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/role"
+      body: "*"
+    };
+  }
+
+  // Updates a role.
+  rpc UpdateAuthRole(UpdateAuthRoleRequest) returns (UpdateAuthRoleResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/auth/role"
+      body: "*"
+    };
+  }
+
+  // Deletes a role.
+  rpc DeleteAuthRole(DeleteAuthRoleRequest) returns (DeleteAuthRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/role/delete"
+      body: "*"
+    };
+  }
+
+  // Assigns permissions to roles.
+  rpc AssignRolePermissions(AssignRolePermissionsRequest) returns (AssignRolePermissionsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/role/permissions"
+      body: "*"
+    };
+  }
+
+  // Removes permissions from roles.
+  rpc UnassignRolePermissions(UnassignRolePermissionsRequest) returns (UnassignRolePermissionsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/role/permissions/delete"
+      body: "*"
+    };
+  }
+
+  // Lists all permissions with pagination.
+  rpc GetAuthPermissions(GetAuthPermissionsRequest) returns (GetAuthPermissionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/permissions"
+    };
+  }
+
+  // Creates a new permission.
+  rpc CreateAuthPermission(CreateAuthPermissionRequest) returns (CreateAuthPermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/permissions"
+      body: "*"
+    };
+  }
+}
+
+message GetAuthRolesRequest {
+  optional int32 page = 1;
+  optional int32 page_size = 2;
+}
+
+message GetAuthRolesResponse {
+  repeated common.v1.Role roles = 1;
+}
+
+message GetAuthRoleRequest {
+  string id = 1;
+}
+
+message GetAuthRoleResponse {
+  common.v1.Role role = 1;
+}
+
+message CreateAuthRoleRequest {
+  string name = 1;
+  string description = 2;
+  int32 hierarchy = 3;
+}
+
+message CreateAuthRoleResponse {
+  string id = 1;
+}
+
+message UpdateAuthRoleRequest {
+  string id = 1;
+  repeated common.v1.UpdateEvent events = 2;
+}
+
+message UpdateAuthRoleResponse {}
+
+message DeleteAuthRoleRequest {
+  string id = 1;
+}
+
+message DeleteAuthRoleResponse {}
+
+message AssignRolePermissionsRequest {
+  repeated string role_ids = 1;
+  repeated string permission_ids = 2;
+}
+
+message AssignRolePermissionsResponse {}
+
+message UnassignRolePermissionsRequest {
+  repeated string role_ids = 1;
+  repeated string permission_ids = 2;
+}
+
+message UnassignRolePermissionsResponse {}
+
+message GetAuthPermissionsRequest {
+  optional int32 page = 1;
+  optional int32 page_size = 2;
+}
+
+message GetAuthPermissionsResponse {
+  repeated common.v1.Permission permissions = 1;
+}
+
+message CreateAuthPermissionRequest {
+  repeated common.v1.Permission permissions = 1;
+}
+
+message CreateAuthPermissionResponse {}

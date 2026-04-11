@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package rolebindings.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/rolebindings/v1;rolebindingspb";
+
+import "google/api/annotations.proto";
+import "common/v1/common.proto";
+
+// RoleBindingsService manages assignments of roles to users.
+service RoleBindingsService {
+  // Gets all role bindings for a specific user.
+  rpc GetRoleBindingsForUser(GetRoleBindingsForUserRequest) returns (GetRoleBindingsForUserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/role_bindings/{user_id}"
+    };
+  }
+
+  // Assigns roles to users.
+  rpc AssignRole(AssignRoleRequest) returns (AssignRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/role_bindings"
+      body: "*"
+    };
+  }
+
+  // Removes role assignments from users.
+  rpc UnassignRole(UnassignRoleRequest) returns (UnassignRoleResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/role_bindings/delete"
+      body: "*"
+    };
+  }
+
+  // Lists all role bindings with pagination.
+  rpc GetAllRoleBindings(GetAllRoleBindingsRequest) returns (GetAllRoleBindingsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/role_bindings"
+    };
+  }
+}
+
+message GetRoleBindingsForUserRequest {
+  string user_id = 1;
+}
+
+message GetRoleBindingsForUserResponse {
+  repeated common.v1.RoleBinding role_bindings = 1;
+}
+
+message AssignRoleRequest {
+  repeated string user_ids = 1;
+  repeated string role_ids = 2;
+}
+
+message AssignRoleResponse {}
+
+message UnassignRoleRequest {
+  repeated string user_ids = 1;
+  repeated string role_ids = 2;
+}
+
+message UnassignRoleResponse {}
+
+message GetAllRoleBindingsRequest {
+  optional int32 page = 1;
+  optional int32 page_size = 2;
+}
+
+message GetAllRoleBindingsResponse {
+  repeated common.v1.RoleBinding role_bindings = 1;
+}
