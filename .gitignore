@@ -20,5 +20,16 @@ v1/base/base
 *.csr
 *.pfx
 *.p12
+*.pub
+Chart.lock
+helm/**/files/*
+*.tgz
+
+# clis
+cli/keys/keys
+cli/cli
+cli/config/config
+cli/redis/redis
+
 
 .claude/

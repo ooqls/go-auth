@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Test the auth
-      run: make test_auth
+      run: make test
 
   build:
     needs: test

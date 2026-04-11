@@ -1,0 +1,24 @@
+{{- $root := . }}
+{{- range $api, $cfg := .Values.apis }}
+{{- if $cfg.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "go-auth.fullname" $root }}-{{ $api }}
+  labels:
+    {{- include "go-auth.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ $api }}
+spec:
+  type: {{ $root.Values.service.type }}
+  ports:
+    - port: {{ $root.Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "go-auth.name" $root }}
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+    app.kubernetes.io/component: {{ $api }}
+{{- end }}
+{{- end }}

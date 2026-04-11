@@ -1,0 +1,90 @@
+image:
+  repository: samrreynolds4/base
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Enable/disable individual API deployments
+apis:
+  authentication:
+    enabled: true
+    replicas: 1
+  users:
+    enabled: true
+    replicas: 1
+  roles:
+    enabled: true
+    replicas: 1
+  permissions:
+    enabled: true
+    replicas: 1
+  resources:
+    enabled: true
+    replicas: 1
+
+seed:
+  enabled: true
+
+# Postgres connection — passed to both the subchart and the registry configmap
+postgres:
+  host: ""          # defaults to <release>-postgresql if empty
+  port: 5432
+  database: goauth
+  auth:
+    username: goauth
+    password: ""    # required
+
+# Valkey connection — passed to both the subchart and the registry configmap
+# auth.password is also forwarded to the bitnami/valkey subchart
+valkey:
+  host: ""          # defaults to <release>-valkey-primary if empty
+  port: 6379
+  database: "0"
+  auth:
+    enabled: true
+    password: ""    # required
+  enabled: true     # controls bitnami/valkey subchart
+
+# TLS for the API servers
+tls:
+  enabled: false
+  # mode: secret        — chart creates a Secret from files/ca.crt, files/server.crt, files/server.key
+  # mode: existingSecret — reference a pre-existing Secret by name
+  mode: secret
+  secretName: go-auth-tls
+
+# Gin/HTTP settings
+gin:
+  port: 8080
+  cors:
+    enabled: true
+    allowAllOrigins: true
+    allowCredentials: true
+    allowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    headers:
+      - Origin
+      - Content-Length
+      - Content-Type
+      - Authorization
+      - X-User-Id
+    exposeHeaders:
+      - Content-Length
+      - Content-Type
+      - X-User-Id
+
+# Bitnami postgresql subchart overrides
+postgresql:
+  enabled: true
+  auth:
+    username: goauth
+    password: ""    # set this — must match postgres.auth.password above
+    database: goauth
+
+
+service:
+  type: ClusterIP
+  port: 8080
