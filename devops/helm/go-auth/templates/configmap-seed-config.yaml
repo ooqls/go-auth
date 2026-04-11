@@ -1,0 +1,23 @@
+{{- if .Values.seed.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "go-auth.fullname" . }}-seed-config
+  labels:
+    {{- include "go-auth.labels" . | nindent 4 }}
+data:
+  seed.yaml: |
+    tls:
+      enabled: {{ .Values.tls.enabled }}
+      ca_path: /config/tls/ca.crt
+      cert_file: /config/tls/server.crt
+      key_file: /config/tls/server.key
+    sql:
+      enabled: true
+      sql_package: SQLX
+      sql_files_dirs:
+        - /migrations/
+    registry:
+      enabled: true
+      path: /config/registry/registry.yaml
+{{- end }}
