@@ -128,7 +128,13 @@ func (r *ServiceImpl) GetRoleByName(ctx *authorizationv1.Context, name string) (
 }
 
 func (r *ServiceImpl) ListRoles(ctx *authorizationv1.Context, page, pageSize int32) ([]rolesv1.Role, error) {
-	roles, err := r.rr.GetRoles(ctx, pageSize, page*pageSize)
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 100
+	}
+	roles, err := r.rr.GetRoles(ctx, pageSize, (page-1)*pageSize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get roles")
 	}

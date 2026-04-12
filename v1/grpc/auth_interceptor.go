@@ -17,6 +17,7 @@ import (
 )
 
 type authContextKey struct{}
+type authVerifiedContextKey struct{}
 
 // AuthorizationFromContext extracts the authorizationv1.Context from a Go context.
 func AuthorizationFromContext(ctx context.Context) (*authorizationv1.Context, bool) {
@@ -24,8 +25,15 @@ func AuthorizationFromContext(ctx context.Context) (*authorizationv1.Context, bo
 	if !ok {
 		return nil, false
 	}
+	if authCtx.IsInternalOperation() {
+		return &authCtx, true
+	}
+	verified, _ := ctx.Value(authVerifiedContextKey{}).(bool)
+	if !verified {
+		return nil, false
+	}
 	authedUser := authCtx.GetAuthedUser()
-	if !authCtx.IsInternalOperation() && authedUser.Id == uuid.Nil {
+	if authedUser.Id == uuid.Nil {
 		return nil, false
 	}
 	return &authCtx, true
@@ -114,7 +122,9 @@ func buildAuthContext(ctx context.Context, userReader usersv1.Reader, l *zap.Log
 	}
 
 	authCtx := authorizationv1.NewAuthorizationContext(*userObj)
-	return context.WithValue(ctx, authContextKey{}, authCtx), nil
+	ctx = context.WithValue(ctx, authContextKey{}, authCtx)
+	ctx = context.WithValue(ctx, authVerifiedContextKey{}, true)
+	return ctx, nil
 }
 
 type wrappedServerStream struct {
