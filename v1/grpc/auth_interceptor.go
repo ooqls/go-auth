@@ -24,6 +24,10 @@ func AuthorizationFromContext(ctx context.Context) (*authorizationv1.Context, bo
 	if !ok {
 		return nil, false
 	}
+	authedUser := authCtx.GetAuthedUser()
+	if !authCtx.IsInternalOperation() && authedUser.Id == uuid.Nil {
+		return nil, false
+	}
 	return &authCtx, true
 }
 
