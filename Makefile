@@ -26,9 +26,9 @@ test:
 	go test ./...
 
 # --- Protobuf / gRPC code generation ---
-.PHONY: proto proto_common proto_auth proto_users proto_roles proto_permissions proto_resources proto_rolebindings
+.PHONY: proto proto_common proto_auth proto_users proto_roles proto_permissions proto_permissionbindings proto_resources proto_rolebindings
 
-proto: proto_common proto_auth proto_users proto_roles proto_permissions proto_resources proto_rolebindings
+proto: proto_common proto_auth proto_users proto_roles proto_permissions proto_permissionbindings proto_resources proto_rolebindings
 	@echo "All protobuf code generated."
 
 proto_common:
@@ -63,6 +63,13 @@ proto_permissions:
 		--go-grpc_out=$(PROTO_OUT) --go-grpc_opt=paths=source_relative \
 		--grpc-gateway_out=$(PROTO_OUT) --grpc-gateway_opt=paths=source_relative \
 		proto/permissions/v1/permissions.proto
+
+proto_permissionbindings:
+	protoc -I $(PROTO_PATH) -I $(GOOGLEAPIS) -I $(PROTO_INCLUDE) \
+		--go_out=$(PROTO_OUT) --go_opt=paths=source_relative \
+		--go-grpc_out=$(PROTO_OUT) --go-grpc_opt=paths=source_relative \
+		--grpc-gateway_out=$(PROTO_OUT) --grpc-gateway_opt=paths=source_relative \
+		proto/permissionbindings/v1/permissionbindings.proto
 
 proto_resources:
 	protoc -I $(PROTO_PATH) -I $(GOOGLEAPIS) -I $(PROTO_INCLUDE) \

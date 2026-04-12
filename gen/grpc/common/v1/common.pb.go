@@ -434,6 +434,58 @@ func (x *RoleBinding) GetUpdatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
+type PermissionBinding struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RoleId        string                 `protobuf:"bytes,1,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	PermissionId  string                 `protobuf:"bytes,2,opt,name=permission_id,json=permissionId,proto3" json:"permission_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PermissionBinding) Reset() {
+	*x = PermissionBinding{}
+	mi := &file_common_v1_common_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PermissionBinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PermissionBinding) ProtoMessage() {}
+
+func (x *PermissionBinding) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_common_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PermissionBinding.ProtoReflect.Descriptor instead.
+func (*PermissionBinding) Descriptor() ([]byte, []int) {
+	return file_common_v1_common_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *PermissionBinding) GetRoleId() string {
+	if x != nil {
+		return x.RoleId
+	}
+	return ""
+}
+
+func (x *PermissionBinding) GetPermissionId() string {
+	if x != nil {
+		return x.PermissionId
+	}
+	return ""
+}
+
 type PaginationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
@@ -444,7 +496,7 @@ type PaginationRequest struct {
 
 func (x *PaginationRequest) Reset() {
 	*x = PaginationRequest{}
-	mi := &file_common_v1_common_proto_msgTypes[5]
+	mi := &file_common_v1_common_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -456,7 +508,7 @@ func (x *PaginationRequest) String() string {
 func (*PaginationRequest) ProtoMessage() {}
 
 func (x *PaginationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_common_v1_common_proto_msgTypes[5]
+	mi := &file_common_v1_common_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -469,7 +521,7 @@ func (x *PaginationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PaginationRequest.ProtoReflect.Descriptor instead.
 func (*PaginationRequest) Descriptor() ([]byte, []int) {
-	return file_common_v1_common_proto_rawDescGZIP(), []int{5}
+	return file_common_v1_common_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *PaginationRequest) GetPage() int32 {
@@ -496,7 +548,7 @@ type UpdateEvent struct {
 
 func (x *UpdateEvent) Reset() {
 	*x = UpdateEvent{}
-	mi := &file_common_v1_common_proto_msgTypes[6]
+	mi := &file_common_v1_common_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -508,7 +560,7 @@ func (x *UpdateEvent) String() string {
 func (*UpdateEvent) ProtoMessage() {}
 
 func (x *UpdateEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_common_v1_common_proto_msgTypes[6]
+	mi := &file_common_v1_common_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -521,7 +573,7 @@ func (x *UpdateEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateEvent.ProtoReflect.Descriptor instead.
 func (*UpdateEvent) Descriptor() ([]byte, []int) {
-	return file_common_v1_common_proto_rawDescGZIP(), []int{6}
+	return file_common_v1_common_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UpdateEvent) GetEvent() string {
@@ -587,7 +639,10 @@ const file_common_v1_common_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"D\n" +
+	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"Q\n" +
+	"\x11PermissionBinding\x12\x17\n" +
+	"\arole_id\x18\x01 \x01(\tR\x06roleId\x12#\n" +
+	"\rpermission_id\x18\x02 \x01(\tR\fpermissionId\"D\n" +
 	"\x11PaginationRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"\x92\x01\n" +
@@ -610,30 +665,31 @@ func file_common_v1_common_proto_rawDescGZIP() []byte {
 	return file_common_v1_common_proto_rawDescData
 }
 
-var file_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_common_v1_common_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_common_v1_common_proto_goTypes = []any{
 	(*User)(nil),                  // 0: common.v1.User
 	(*Role)(nil),                  // 1: common.v1.Role
 	(*Permission)(nil),            // 2: common.v1.Permission
 	(*Resource)(nil),              // 3: common.v1.Resource
 	(*RoleBinding)(nil),           // 4: common.v1.RoleBinding
-	(*PaginationRequest)(nil),     // 5: common.v1.PaginationRequest
-	(*UpdateEvent)(nil),           // 6: common.v1.UpdateEvent
-	nil,                           // 7: common.v1.UpdateEvent.DataEntry
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*PermissionBinding)(nil),     // 5: common.v1.PermissionBinding
+	(*PaginationRequest)(nil),     // 6: common.v1.PaginationRequest
+	(*UpdateEvent)(nil),           // 7: common.v1.UpdateEvent
+	nil,                           // 8: common.v1.UpdateEvent.DataEntry
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_common_v1_common_proto_depIdxs = []int32{
-	8,  // 0: common.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 1: common.v1.User.updated_at:type_name -> google.protobuf.Timestamp
-	8,  // 2: common.v1.Role.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 3: common.v1.Role.updated_at:type_name -> google.protobuf.Timestamp
-	8,  // 4: common.v1.Permission.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 5: common.v1.Permission.updated_at:type_name -> google.protobuf.Timestamp
-	8,  // 6: common.v1.Resource.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 7: common.v1.Resource.updated_at:type_name -> google.protobuf.Timestamp
-	8,  // 8: common.v1.RoleBinding.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 9: common.v1.RoleBinding.updated_at:type_name -> google.protobuf.Timestamp
-	7,  // 10: common.v1.UpdateEvent.data:type_name -> common.v1.UpdateEvent.DataEntry
+	9,  // 0: common.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 1: common.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	9,  // 2: common.v1.Role.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 3: common.v1.Role.updated_at:type_name -> google.protobuf.Timestamp
+	9,  // 4: common.v1.Permission.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 5: common.v1.Permission.updated_at:type_name -> google.protobuf.Timestamp
+	9,  // 6: common.v1.Resource.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 7: common.v1.Resource.updated_at:type_name -> google.protobuf.Timestamp
+	9,  // 8: common.v1.RoleBinding.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 9: common.v1.RoleBinding.updated_at:type_name -> google.protobuf.Timestamp
+	8,  // 10: common.v1.UpdateEvent.data:type_name -> common.v1.UpdateEvent.DataEntry
 	11, // [11:11] is the sub-list for method output_type
 	11, // [11:11] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
@@ -652,7 +708,7 @@ func file_common_v1_common_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_v1_common_proto_rawDesc), len(file_common_v1_common_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

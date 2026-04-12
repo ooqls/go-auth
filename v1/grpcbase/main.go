@@ -16,6 +16,7 @@ import (
 	"github.com/ooqls/getset/db/pgx"
 	"github.com/ooqls/getset/log"
 	authpb "github.com/ooqls/go-auth/gen/grpc/auth/v1"
+	permissionbindingspb "github.com/ooqls/go-auth/gen/grpc/permissionbindings/v1"
 	permissionspb "github.com/ooqls/go-auth/gen/grpc/permissions/v1"
 	resourcespb "github.com/ooqls/go-auth/gen/grpc/resources/v1"
 	rolebindingspb "github.com/ooqls/go-auth/gen/grpc/rolebindings/v1"
@@ -32,6 +33,7 @@ import (
 	grpcutil "github.com/ooqls/go-auth/v1/grpc"
 	"github.com/ooqls/go-auth/v1/permissions"
 	"github.com/ooqls/go-auth/v1/permissions/permissionsgrpc"
+	"github.com/ooqls/go-auth/v1/permissionbindings/permissionbindingsgrpc"
 	"github.com/ooqls/go-auth/v1/resources/resourcesgrpc"
 	"github.com/ooqls/go-auth/v1/rolebindings"
 	"github.com/ooqls/go-auth/v1/rolebindings/rolebindingsgrpc"
@@ -57,7 +59,7 @@ func init() {
 	flag.BoolVar(&standalone, "standalone", false, "run in standalone mode")
 	flag.BoolVar(&testEnvironment, "test-environment", false, "run in test environment")
 	flag.IntVar(&grpcPort, "grpc-port", 9090, "gRPC server port")
-	flag.StringVar(&api, "api", "all", "api to serve: all, authentication, users, roles, permissions, resources, rolebindings")
+	flag.StringVar(&api, "api", "all", "api to serve: all, authentication, users, roles, permissions, permissionbindings, resources, rolebindings")
 }
 
 func main() {
@@ -109,6 +111,8 @@ func main() {
 			registerRoles(grpcServer, factory, l)
 		case "permissions":
 			registerPermissions(grpcServer, factory, l)
+		case "permissionbindings":
+			registerPermissionBindings(grpcServer, factory, l)
 		case "resources":
 			registerResources(grpcServer, factory, l)
 		case "rolebindings":
@@ -118,6 +122,7 @@ func main() {
 			registerUsers(grpcServer, factory, l)
 			registerRoles(grpcServer, factory, l)
 			registerPermissions(grpcServer, factory, l)
+			registerPermissionBindings(grpcServer, factory, l)
 			registerResources(grpcServer, factory, l)
 			registerRoleBindings(grpcServer, factory, l)
 		}
@@ -213,8 +218,7 @@ func registerUsers(grpcServer *grpc.Server, factory datav1.Factory, l *zap.Logge
 func registerRoles(grpcServer *grpc.Server, factory datav1.Factory, l *zap.Logger) {
 	rolesService := roles.NewServiceImpl(factory)
 	permissionService := permissions.NewServiceImpl(factory)
-	pbWriter := factory.NewPermissionBindingWriter()
-	rolespb.RegisterRolesServiceServer(grpcServer, rolesgrpc.NewServer(rolesService, permissionService, pbWriter, l))
+	rolespb.RegisterRolesServiceServer(grpcServer, rolesgrpc.NewServer(rolesService, permissionService, l))
 	l.Info("registered gRPC RolesService")
 }
 
@@ -222,6 +226,13 @@ func registerPermissions(grpcServer *grpc.Server, factory datav1.Factory, l *zap
 	permissionService := permissions.NewServiceImpl(factory)
 	permissionspb.RegisterPermissionsServiceServer(grpcServer, permissionsgrpc.NewServer(permissionService, l))
 	l.Info("registered gRPC PermissionsService")
+}
+
+func registerPermissionBindings(grpcServer *grpc.Server, factory datav1.Factory, l *zap.Logger) {
+	pbReader := factory.NewPermissionBindingReader()
+	pbWriter := factory.NewPermissionBindingWriter()
+	permissionbindingspb.RegisterPermissionBindingsServiceServer(grpcServer, permissionbindingsgrpc.NewServer(pbReader, pbWriter, l))
+	l.Info("registered gRPC PermissionBindingsService")
 }
 
 func registerResources(grpcServer *grpc.Server, factory datav1.Factory, l *zap.Logger) {

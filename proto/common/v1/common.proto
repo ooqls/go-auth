@@ -52,6 +52,11 @@ message RoleBinding {
   google.protobuf.Timestamp updated_at = 4;
 }
 
+message PermissionBinding {
+  string role_id = 1;
+  string permission_id = 2;
+}
+
 message PaginationRequest {
   int32 page = 1;
   int32 page_size = 2;

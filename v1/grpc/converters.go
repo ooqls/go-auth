@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	commonpb "github.com/ooqls/go-auth/gen/grpc/common/v1"
 	"github.com/ooqls/go-auth/internal/corev1"
+	"github.com/ooqls/go-auth/internal/permissionbindingsv1"
 	"github.com/ooqls/go-auth/internal/permissionsv1"
 	"github.com/ooqls/go-auth/internal/resourcesv1"
 	"github.com/ooqls/go-auth/internal/rolebindingsv1"
@@ -137,6 +138,26 @@ func RoleBindingsToProto(rbs []rolebindingsv1.Rolebinding) []*commonpb.RoleBindi
 	result := make([]*commonpb.RoleBinding, 0, len(rbs))
 	for i := range rbs {
 		result = append(result, RoleBindingToProto(&rbs[i]))
+	}
+	return result
+}
+
+// --- PermissionBinding converters ---
+
+func PermissionBindingToProto(pb *permissionbindingsv1.Permissionbindingv1) *commonpb.PermissionBinding {
+	if pb == nil {
+		return nil
+	}
+	return &commonpb.PermissionBinding{
+		RoleId:       pb.RoleID.String(),
+		PermissionId: pb.PermissionID.String(),
+	}
+}
+
+func PermissionBindingsToProto(pbs []permissionbindingsv1.Permissionbindingv1) []*commonpb.PermissionBinding {
+	result := make([]*commonpb.PermissionBinding, 0, len(pbs))
+	for i := range pbs {
+		result = append(result, PermissionBindingToProto(&pbs[i]))
 	}
 	return result
 }

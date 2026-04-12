@@ -6,8 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	rolespb "github.com/ooqls/go-auth/gen/grpc/roles/v1"
-	"github.com/ooqls/go-auth/internal/contexts"
-	"github.com/ooqls/go-auth/internal/permissionbindingsv1"
 	grpcutil "github.com/ooqls/go-auth/v1/grpc"
 	"github.com/ooqls/go-auth/v1/permissions"
 	"github.com/ooqls/go-auth/v1/roles"
@@ -22,20 +20,17 @@ type Server struct {
 	rolespb.UnimplementedRolesServiceServer
 	service           roles.Service
 	permissionService permissions.Service
-	pbWriter          permissionbindingsv1.Writer
 	l                 *zap.Logger
 }
 
 func NewServer(
 	svc roles.Service,
 	permSvc permissions.Service,
-	pbWriter permissionbindingsv1.Writer,
 	l *zap.Logger,
 ) *Server {
 	return &Server{
 		service:           svc,
 		permissionService: permSvc,
-		pbWriter:          pbWriter,
 		l:                 l,
 	}
 }
@@ -168,62 +163,6 @@ func (s *Server) DeleteAuthRole(ctx context.Context, req *rolespb.DeleteAuthRole
 	}
 
 	return &rolespb.DeleteAuthRoleResponse{}, nil
-}
-
-func (s *Server) AssignRolePermissions(ctx context.Context, req *rolespb.AssignRolePermissionsRequest) (*rolespb.AssignRolePermissionsResponse, error) {
-	_, ok := grpcutil.AuthorizationFromContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "authentication required")
-	}
-
-	roleIDs, err := grpcutil.ParseUUIDs(req.GetRoleIds())
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid role ids")
-	}
-
-	permIDs, err := grpcutil.ParseUUIDs(req.GetPermissionIds())
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid permission ids")
-	}
-
-	lc := contexts.NewLoggingContext(ctx, s.l)
-	for _, roleID := range roleIDs {
-		for _, permID := range permIDs {
-			if err := s.pbWriter.AssignPermission(lc, roleID, permID); err != nil {
-				return nil, grpcutil.HandleError(err)
-			}
-		}
-	}
-
-	return &rolespb.AssignRolePermissionsResponse{}, nil
-}
-
-func (s *Server) UnassignRolePermissions(ctx context.Context, req *rolespb.UnassignRolePermissionsRequest) (*rolespb.UnassignRolePermissionsResponse, error) {
-	_, ok := grpcutil.AuthorizationFromContext(ctx)
-	if !ok {
-		return nil, status.Error(codes.Unauthenticated, "authentication required")
-	}
-
-	roleIDs, err := grpcutil.ParseUUIDs(req.GetRoleIds())
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid role ids")
-	}
-
-	permIDs, err := grpcutil.ParseUUIDs(req.GetPermissionIds())
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid permission ids")
-	}
-
-	lc := contexts.NewLoggingContext(ctx, s.l)
-	for _, roleID := range roleIDs {
-		for _, permID := range permIDs {
-			if err := s.pbWriter.UnassignPermission(lc, roleID, permID); err != nil {
-				return nil, grpcutil.HandleError(err)
-			}
-		}
-	}
-
-	return &rolespb.UnassignRolePermissionsResponse{}, nil
 }
 
 func (s *Server) GetAuthPermissions(ctx context.Context, req *rolespb.GetAuthPermissionsRequest) (*rolespb.GetAuthPermissionsResponse, error) {

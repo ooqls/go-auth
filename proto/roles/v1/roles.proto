@@ -47,22 +47,6 @@ service RolesService {
     };
   }
 
-  // Assigns permissions to roles.
-  rpc AssignRolePermissions(AssignRolePermissionsRequest) returns (AssignRolePermissionsResponse) {
-    option (google.api.http) = {
-      post: "/api/v1/auth/role/permissions"
-      body: "*"
-    };
-  }
-
-  // Removes permissions from roles.
-  rpc UnassignRolePermissions(UnassignRolePermissionsRequest) returns (UnassignRolePermissionsResponse) {
-    option (google.api.http) = {
-      post: "/api/v1/auth/role/permissions/delete"
-      body: "*"
-    };
-  }
-
   // Lists all permissions with pagination.
   rpc GetAuthPermissions(GetAuthPermissionsRequest) returns (GetAuthPermissionsResponse) {
     option (google.api.http) = {
@@ -118,20 +102,6 @@ message DeleteAuthRoleRequest {
 }
 
 message DeleteAuthRoleResponse {}
-
-message AssignRolePermissionsRequest {
-  repeated string role_ids = 1;
-  repeated string permission_ids = 2;
-}
-
-message AssignRolePermissionsResponse {}
-
-message UnassignRolePermissionsRequest {
-  repeated string role_ids = 1;
-  repeated string permission_ids = 2;
-}
-
-message UnassignRolePermissionsResponse {}
 
 message GetAuthPermissionsRequest {
   optional int32 page = 1;
