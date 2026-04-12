@@ -32,7 +32,7 @@ func (s *Server) ListPermissions(ctx context.Context, req *permissionspb.ListPer
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
 
-	page := 0
+	page := 1
 	pageSize := 100
 	if req.Page != nil {
 		page = int(req.GetPage())

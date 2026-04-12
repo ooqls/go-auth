@@ -41,7 +41,7 @@ func (s *Server) GetAuthRoles(ctx context.Context, req *rolespb.GetAuthRolesRequ
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
 
-	page := int32(0)
+	page := int32(1)
 	pageSize := int32(100)
 	if req.Page != nil {
 		page = req.GetPage()
@@ -50,7 +50,7 @@ func (s *Server) GetAuthRoles(ctx context.Context, req *rolespb.GetAuthRolesRequ
 		pageSize = req.GetPageSize()
 	}
 
-	roleList, err := s.service.ListRoles(authCtx, pageSize, page*pageSize)
+	roleList, err := s.service.ListRoles(authCtx, page, pageSize)
 	if err != nil {
 		return nil, grpcutil.HandleError(err)
 	}
@@ -171,7 +171,7 @@ func (s *Server) GetAuthPermissions(ctx context.Context, req *rolespb.GetAuthPer
 		return nil, status.Error(codes.Unauthenticated, "authentication required")
 	}
 
-	page := 0
+	page := 1
 	pageSize := 100
 	if req.Page != nil {
 		page = int(req.GetPage())
