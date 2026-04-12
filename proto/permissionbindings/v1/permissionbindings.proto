@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package permissionbindings.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/permissionbindings/v1;permissionbindingspb";
+
+import "google/api/annotations.proto";
+import "common/v1/common.proto";
+
+// PermissionBindingsService manages assignments of permissions to roles.
+service PermissionBindingsService {
+  // Assigns permissions to roles.
+  rpc AssignPermission(AssignPermissionRequest) returns (AssignPermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/permission_bindings"
+      body: "*"
+    };
+  }
+
+  // Removes permission assignments from roles.
+  rpc UnassignPermission(UnassignPermissionRequest) returns (UnassignPermissionResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/permission_bindings/delete"
+      body: "*"
+    };
+  }
+
+  // Gets all permission bindings for a specific role.
+  rpc GetPermissionBindingsForRole(GetPermissionBindingsForRoleRequest) returns (GetPermissionBindingsForRoleResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/permission_bindings/{role_id}"
+    };
+  }
+
+  // Lists all permission bindings with pagination.
+  rpc ListPermissionBindings(ListPermissionBindingsRequest) returns (ListPermissionBindingsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/permission_bindings"
+    };
+  }
+}
+
+message AssignPermissionRequest {
+  repeated string role_ids = 1;
+  repeated string permission_ids = 2;
+}
+
+message AssignPermissionResponse {}
+
+message UnassignPermissionRequest {
+  repeated string role_ids = 1;
+  repeated string permission_ids = 2;
+}
+
+message UnassignPermissionResponse {}
+
+message GetPermissionBindingsForRoleRequest {
+  string role_id = 1;
+}
+
+message GetPermissionBindingsForRoleResponse {
+  repeated common.v1.PermissionBinding permission_bindings = 1;
+}
+
+message ListPermissionBindingsRequest {
+  optional int32 page = 1;
+  optional int32 page_size = 2;
+}
+
+message ListPermissionBindingsResponse {
+  repeated common.v1.PermissionBinding permission_bindings = 1;
+}

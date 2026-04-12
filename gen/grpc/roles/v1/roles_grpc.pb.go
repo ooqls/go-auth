@@ -19,15 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RolesService_GetAuthRoles_FullMethodName            = "/roles.v1.RolesService/GetAuthRoles"
-	RolesService_GetAuthRole_FullMethodName             = "/roles.v1.RolesService/GetAuthRole"
-	RolesService_CreateAuthRole_FullMethodName          = "/roles.v1.RolesService/CreateAuthRole"
-	RolesService_UpdateAuthRole_FullMethodName          = "/roles.v1.RolesService/UpdateAuthRole"
-	RolesService_DeleteAuthRole_FullMethodName          = "/roles.v1.RolesService/DeleteAuthRole"
-	RolesService_AssignRolePermissions_FullMethodName   = "/roles.v1.RolesService/AssignRolePermissions"
-	RolesService_UnassignRolePermissions_FullMethodName = "/roles.v1.RolesService/UnassignRolePermissions"
-	RolesService_GetAuthPermissions_FullMethodName      = "/roles.v1.RolesService/GetAuthPermissions"
-	RolesService_CreateAuthPermission_FullMethodName    = "/roles.v1.RolesService/CreateAuthPermission"
+	RolesService_GetAuthRoles_FullMethodName         = "/roles.v1.RolesService/GetAuthRoles"
+	RolesService_GetAuthRole_FullMethodName          = "/roles.v1.RolesService/GetAuthRole"
+	RolesService_CreateAuthRole_FullMethodName       = "/roles.v1.RolesService/CreateAuthRole"
+	RolesService_UpdateAuthRole_FullMethodName       = "/roles.v1.RolesService/UpdateAuthRole"
+	RolesService_DeleteAuthRole_FullMethodName       = "/roles.v1.RolesService/DeleteAuthRole"
+	RolesService_GetAuthPermissions_FullMethodName   = "/roles.v1.RolesService/GetAuthPermissions"
+	RolesService_CreateAuthPermission_FullMethodName = "/roles.v1.RolesService/CreateAuthPermission"
 )
 
 // RolesServiceClient is the client API for RolesService service.
@@ -46,10 +44,6 @@ type RolesServiceClient interface {
 	UpdateAuthRole(ctx context.Context, in *UpdateAuthRoleRequest, opts ...grpc.CallOption) (*UpdateAuthRoleResponse, error)
 	// Deletes a role.
 	DeleteAuthRole(ctx context.Context, in *DeleteAuthRoleRequest, opts ...grpc.CallOption) (*DeleteAuthRoleResponse, error)
-	// Assigns permissions to roles.
-	AssignRolePermissions(ctx context.Context, in *AssignRolePermissionsRequest, opts ...grpc.CallOption) (*AssignRolePermissionsResponse, error)
-	// Removes permissions from roles.
-	UnassignRolePermissions(ctx context.Context, in *UnassignRolePermissionsRequest, opts ...grpc.CallOption) (*UnassignRolePermissionsResponse, error)
 	// Lists all permissions with pagination.
 	GetAuthPermissions(ctx context.Context, in *GetAuthPermissionsRequest, opts ...grpc.CallOption) (*GetAuthPermissionsResponse, error)
 	// Creates a new permission.
@@ -114,26 +108,6 @@ func (c *rolesServiceClient) DeleteAuthRole(ctx context.Context, in *DeleteAuthR
 	return out, nil
 }
 
-func (c *rolesServiceClient) AssignRolePermissions(ctx context.Context, in *AssignRolePermissionsRequest, opts ...grpc.CallOption) (*AssignRolePermissionsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AssignRolePermissionsResponse)
-	err := c.cc.Invoke(ctx, RolesService_AssignRolePermissions_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *rolesServiceClient) UnassignRolePermissions(ctx context.Context, in *UnassignRolePermissionsRequest, opts ...grpc.CallOption) (*UnassignRolePermissionsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UnassignRolePermissionsResponse)
-	err := c.cc.Invoke(ctx, RolesService_UnassignRolePermissions_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *rolesServiceClient) GetAuthPermissions(ctx context.Context, in *GetAuthPermissionsRequest, opts ...grpc.CallOption) (*GetAuthPermissionsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAuthPermissionsResponse)
@@ -170,10 +144,6 @@ type RolesServiceServer interface {
 	UpdateAuthRole(context.Context, *UpdateAuthRoleRequest) (*UpdateAuthRoleResponse, error)
 	// Deletes a role.
 	DeleteAuthRole(context.Context, *DeleteAuthRoleRequest) (*DeleteAuthRoleResponse, error)
-	// Assigns permissions to roles.
-	AssignRolePermissions(context.Context, *AssignRolePermissionsRequest) (*AssignRolePermissionsResponse, error)
-	// Removes permissions from roles.
-	UnassignRolePermissions(context.Context, *UnassignRolePermissionsRequest) (*UnassignRolePermissionsResponse, error)
 	// Lists all permissions with pagination.
 	GetAuthPermissions(context.Context, *GetAuthPermissionsRequest) (*GetAuthPermissionsResponse, error)
 	// Creates a new permission.
@@ -202,12 +172,6 @@ func (UnimplementedRolesServiceServer) UpdateAuthRole(context.Context, *UpdateAu
 }
 func (UnimplementedRolesServiceServer) DeleteAuthRole(context.Context, *DeleteAuthRoleRequest) (*DeleteAuthRoleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteAuthRole not implemented")
-}
-func (UnimplementedRolesServiceServer) AssignRolePermissions(context.Context, *AssignRolePermissionsRequest) (*AssignRolePermissionsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AssignRolePermissions not implemented")
-}
-func (UnimplementedRolesServiceServer) UnassignRolePermissions(context.Context, *UnassignRolePermissionsRequest) (*UnassignRolePermissionsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method UnassignRolePermissions not implemented")
 }
 func (UnimplementedRolesServiceServer) GetAuthPermissions(context.Context, *GetAuthPermissionsRequest) (*GetAuthPermissionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAuthPermissions not implemented")
@@ -326,42 +290,6 @@ func _RolesService_DeleteAuthRole_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RolesService_AssignRolePermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(AssignRolePermissionsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RolesServiceServer).AssignRolePermissions(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RolesService_AssignRolePermissions_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RolesServiceServer).AssignRolePermissions(ctx, req.(*AssignRolePermissionsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RolesService_UnassignRolePermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UnassignRolePermissionsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RolesServiceServer).UnassignRolePermissions(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RolesService_UnassignRolePermissions_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RolesServiceServer).UnassignRolePermissions(ctx, req.(*UnassignRolePermissionsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RolesService_GetAuthPermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAuthPermissionsRequest)
 	if err := dec(in); err != nil {
@@ -424,14 +352,6 @@ var RolesService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteAuthRole",
 			Handler:    _RolesService_DeleteAuthRole_Handler,
-		},
-		{
-			MethodName: "AssignRolePermissions",
-			Handler:    _RolesService_AssignRolePermissions_Handler,
-		},
-		{
-			MethodName: "UnassignRolePermissions",
-			Handler:    _RolesService_UnassignRolePermissions_Handler,
 		},
 		{
 			MethodName: "GetAuthPermissions",
