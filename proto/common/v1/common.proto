@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/common/v1;commonpb";
+
+import "google/protobuf/timestamp.proto";
+
+// Shared message types used across all services.
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message Role {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  int32 hierarchy = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message Permission {
+  string id = 1;
+  string resource_kind = 2;
+  string resource_group = 3;
+  string resource_name = 4;
+  repeated string actions = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message Resource {
+  string id = 1;
+  string name = 2;
+  string group = 3;
+  string kind = 4;
+  string description = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message RoleBinding {
+  string role_id = 1;
+  string user_id = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message PermissionBinding {
+  string role_id = 1;
+  string permission_id = 2;
+}
+
+message PaginationRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message UpdateEvent {
+  string event = 1;
+  map<string, string> data = 2;
+}

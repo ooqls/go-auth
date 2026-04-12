@@ -1,0 +1,16 @@
+version: v2
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      value: github.com/ooqls/go-auth/gen/grpc
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: ../gen/grpc
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: ../gen/grpc
+    opt: paths=source_relative
+  - remote: buf.build/grpc-ecosystem/gateway
+    out: ../gen/grpc
+    opt: paths=source_relative

@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package users.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/users/v1;userspb";
+
+import "google/api/annotations.proto";
+import "common/v1/common.proto";
+
+// UsersService manages user accounts.
+service UsersService {
+  // Gets the currently authenticated user's profile.
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/user"
+    };
+  }
+
+  // Creates a new user.
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/user"
+      body: "*"
+    };
+  }
+
+  // Gets a user by their ID.
+  rpc GetUserByID(GetUserByIDRequest) returns (GetUserByIDResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/user/{id}"
+    };
+  }
+
+  // Updates a user by their ID.
+  rpc UpdateUserByID(UpdateUserByIDRequest) returns (UpdateUserByIDResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/auth/user/{id}"
+      body: "*"
+    };
+  }
+
+  // Deletes a user by their ID.
+  rpc DeleteUserByID(DeleteUserByIDRequest) returns (DeleteUserByIDResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/auth/user/{id}"
+    };
+  }
+
+  // Lists all users with pagination.
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/users"
+    };
+  }
+
+  // Gets a user by their username.
+  rpc GetUserByUsername(GetUserByUsernameRequest) returns (GetUserByUsernameResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/user/username/{username}"
+    };
+  }
+}
+
+message GetCurrentUserRequest {}
+
+message GetCurrentUserResponse {
+  common.v1.User user = 1;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string email = 2;
+  optional bytes key = 3;
+  optional bytes salt = 4;
+}
+
+message CreateUserResponse {
+  common.v1.User user = 1;
+  // Only populated when key/salt are not provided (random password generated).
+  optional string password = 2;
+}
+
+message GetUserByIDRequest {
+  string id = 1;
+}
+
+message GetUserByIDResponse {
+  common.v1.User user = 1;
+}
+
+message UpdateUserByIDRequest {
+  string id = 1;
+  repeated common.v1.UpdateEvent events = 2;
+}
+
+message UpdateUserByIDResponse {}
+
+message DeleteUserByIDRequest {
+  string id = 1;
+}
+
+message DeleteUserByIDResponse {}
+
+message GetUsersRequest {
+  optional int32 page = 1;
+  optional int32 page_size = 2;
+}
+
+message GetUsersResponse {
+  repeated common.v1.User users = 1;
+}
+
+message GetUserByUsernameRequest {
+  string username = 1;
+}
+
+message GetUserByUsernameResponse {
+  common.v1.User user = 1;
+}

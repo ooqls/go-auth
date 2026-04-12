@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package resources.v1;
+
+option go_package = "github.com/ooqls/go-auth/gen/grpc/resources/v1;resourcespb";
+
+import "google/api/annotations.proto";
+import "common/v1/common.proto";
+
+// ResourcesService manages resources.
+service ResourcesService {
+  // Gets a resource by name, group, and kind.
+  rpc GetResource(GetResourceRequest) returns (GetResourceResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/resource/{name}/{group}/{kind}"
+    };
+  }
+
+  // Deletes a resource by name, group, and kind.
+  rpc DeleteResource(DeleteResourceRequest) returns (DeleteResourceResponse) {
+    option (google.api.http) = {
+      delete: "/api/v1/auth/resource/{name}/{group}/{kind}"
+    };
+  }
+
+  // Lists all resources with pagination and optional filters.
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/resource"
+    };
+  }
+
+  // Creates a new resource.
+  rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/resource"
+      body: "*"
+    };
+  }
+
+  // Updates a resource.
+  rpc UpdateResource(UpdateResourceRequest) returns (UpdateResourceResponse) {
+    option (google.api.http) = {
+      put: "/api/v1/auth/resource"
+      body: "*"
+    };
+  }
+}
+
+message GetResourceRequest {
+  string name = 1;
+  string group = 2;
+  string kind = 3;
+}
+
+message GetResourceResponse {
+  common.v1.Resource resource = 1;
+}
+
+message DeleteResourceRequest {
+  string name = 1;
+  string group = 2;
+  string kind = 3;
+}
+
+message DeleteResourceResponse {}
+
+message ListResourcesRequest {
+  optional string group = 1;
+  optional string kind = 2;
+  optional int32 page = 3;
+  optional int32 page_size = 4;
+}
+
+message ListResourcesResponse {
+  repeated common.v1.Resource resources = 1;
+}
+
+message CreateResourceRequest {
+  string name = 1;
+  string group = 2;
+  string kind = 3;
+  string description = 4;
+}
+
+message CreateResourceResponse {
+  common.v1.Resource resource = 1;
+}
+
+message UpdateResourceRequest {
+  string id = 1;
+  string name = 2;
+  optional string description = 3;
+}
+
+message UpdateResourceResponse {
+  common.v1.Resource resource = 1;
+}
