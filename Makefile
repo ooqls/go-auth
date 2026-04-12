@@ -68,7 +68,6 @@ proto_permissionbindings:
 	protoc -I $(PROTO_PATH) -I $(GOOGLEAPIS) -I $(PROTO_INCLUDE) \
 		--go_out=$(PROTO_OUT) --go_opt=paths=source_relative \
 		--go-grpc_out=$(PROTO_OUT) --go-grpc_opt=paths=source_relative \
-		--grpc-gateway_out=$(PROTO_OUT) --grpc-gateway_opt=paths=source_relative \
 		proto/permissionbindings/v1/permissionbindings.proto
 
 proto_resources:
