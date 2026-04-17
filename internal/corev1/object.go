@@ -6,6 +6,13 @@ import (
 	"github.com/google/uuid"
 )
 
+func FromID(id uuid.UUID, metadata Metadata) Object {
+	return Object{
+		Metadata: metadata,
+		Id:       id,
+	}
+}
+
 type Object struct {
 	Metadata
 	Id        uuid.UUID `json:"id"`

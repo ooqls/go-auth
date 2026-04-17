@@ -9,6 +9,23 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Challengeattemptsv1 struct {
+	ID          uuid.UUID
+	ChallengeID uuid.UUID
+	UserID      uuid.UUID
+	Success     bool
+	CreatedAt   pgtype.Timestamptz
+}
+
+type Challengesv1 struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Challenge string
+	Salt      []byte
+	CreatedAt pgtype.Timestamptz
+	ExpiresAt pgtype.Timestamptz
+}
+
 type Permissionbindingsv1 struct {
 	RoleID       uuid.UUID
 	PermissionID uuid.UUID

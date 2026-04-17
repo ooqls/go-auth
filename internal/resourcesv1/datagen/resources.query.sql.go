@@ -19,14 +19,16 @@ INSERT INTO resourcesv1 (
   resource_name,
   description,
   created_at,
-  updated_at
+  updated_at,
+  id
 ) VALUES (
   $1,
   $2,
   $3,
   $4,
   $5,
-  $6
+  $6,
+  $7
 ) RETURNING id, resource_group, resource_kind, resource_name, description, created_at, updated_at
 `
 
@@ -37,6 +39,7 @@ type CreateResourceParams struct {
 	Description   string
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
+	ID            uuid.UUID
 }
 
 func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) (Resourcesv1, error) {
@@ -47,6 +50,7 @@ func (q *Queries) CreateResource(ctx context.Context, arg CreateResourceParams) 
 		arg.Description,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.ID,
 	)
 	var i Resourcesv1
 	err := row.Scan(
@@ -86,17 +90,36 @@ func (q *Queries) DeleteResourceById(ctx context.Context, id uuid.UUID) error {
 }
 
 const getResourceByID = `-- name: GetResourceByID :one
+SELECT id, resource_group, resource_kind, resource_name, description, created_at, updated_at FROM resourcesv1 WHERE id = $1
+`
+
+func (q *Queries) GetResourceByID(ctx context.Context, id uuid.UUID) (Resourcesv1, error) {
+	row := q.db.QueryRow(ctx, getResourceByID, id)
+	var i Resourcesv1
+	err := row.Scan(
+		&i.ID,
+		&i.ResourceGroup,
+		&i.ResourceKind,
+		&i.ResourceName,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getResourceByName = `-- name: GetResourceByName :one
 SELECT id, resource_group, resource_kind, resource_name, description, created_at, updated_at FROM resourcesv1 WHERE resource_name = $1 AND resource_group = $2 AND resource_kind = $3
 `
 
-type GetResourceByIDParams struct {
+type GetResourceByNameParams struct {
 	ResourceName  string
 	ResourceGroup string
 	ResourceKind  string
 }
 
-func (q *Queries) GetResourceByID(ctx context.Context, arg GetResourceByIDParams) (Resourcesv1, error) {
-	row := q.db.QueryRow(ctx, getResourceByID, arg.ResourceName, arg.ResourceGroup, arg.ResourceKind)
+func (q *Queries) GetResourceByName(ctx context.Context, arg GetResourceByNameParams) (Resourcesv1, error) {
+	row := q.db.QueryRow(ctx, getResourceByName, arg.ResourceName, arg.ResourceGroup, arg.ResourceKind)
 	var i Resourcesv1
 	err := row.Scan(
 		&i.ID,
@@ -152,25 +175,6 @@ func (q *Queries) GetResources(ctx context.Context, arg GetResourcesParams) ([]R
 		return nil, err
 	}
 	return items, nil
-}
-
-const getResourcesById = `-- name: GetResourcesById :one
-SELECT id, resource_group, resource_kind, resource_name, description, created_at, updated_at FROM resourcesv1 WHERE id = $1
-`
-
-func (q *Queries) GetResourcesById(ctx context.Context, id uuid.UUID) (Resourcesv1, error) {
-	row := q.db.QueryRow(ctx, getResourcesById, id)
-	var i Resourcesv1
-	err := row.Scan(
-		&i.ID,
-		&i.ResourceGroup,
-		&i.ResourceKind,
-		&i.ResourceName,
-		&i.Description,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
 }
 
 const updateResource = `-- name: UpdateResource :one

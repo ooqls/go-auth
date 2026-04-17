@@ -33,6 +33,7 @@ func NewSQLWriter(db *datagen.Queries) Writer {
 
 func (w *SQLWriter) CreateResource(ctx context.Context, group, kind, name, description string) (*Resourcev1, error) {
 	res, err := w.query.CreateResource(ctx, datagen.CreateResourceParams{
+		ID:            uuid.New(),
 		ResourceKind:  kind,
 		ResourceGroup: group,
 		ResourceName:  name,

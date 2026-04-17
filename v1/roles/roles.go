@@ -1,10 +1,12 @@
 package roles
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/ooqls/go-auth/internal/aggsv1"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
+	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/internal/rolesv1"
 	v1 "github.com/ooqls/go-auth/v1"
@@ -63,14 +65,9 @@ func (r *ServiceImpl) CreateRole(
 }
 
 func (r *ServiceImpl) DeleteRole(ctx *authorizationv1.Context, id Id) error {
-	role, err := r.rr.GetRole(ctx, id)
-	if err != nil {
-		return errors.Wrap(err, "failed to get role")
-	}
-
 	if err := r.ra.IsAuthorizedToPerformAction(ctx,
 		authorizationv1.DeleteAction,
-		role.Object); err != nil {
+		corev1.FromID(id, rolesv1.Metadata)); err != nil {
 		return errors.Wrap(err, "failed to authorize role action")
 	}
 
@@ -78,20 +75,25 @@ func (r *ServiceImpl) DeleteRole(ctx *authorizationv1.Context, id Id) error {
 }
 
 func (r *ServiceImpl) GetRole(ctx *authorizationv1.Context, id Id) (*rolesv1.Role, error) {
+	if err := r.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, corev1.FromID(id, rolesv1.Metadata)); err != nil {
+		return nil, errors.Wrap(err, "failed to authorize role action")
+	}
+
 	role, err := r.rr.GetRole(ctx, id)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get role")
-	}
-
-	if err := r.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, role.Object); err != nil {
-		return nil, errors.Wrap(err, "failed to authorize role action")
 	}
 
 	return role, nil
 }
 
 func (r *ServiceImpl) GetRoleAgg(ctx *authorizationv1.Context, id Id) (*RoleAgg, error) {
-	err := r.ra.IsAuthorizedToReadUserRoles(ctx, id)
+	err := r.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, corev1.FromID(id, rolesv1.Metadata))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to authorize role action")
+	}
+
+	err = r.ra.IsAuthorizedToReadRolePermissions(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +126,15 @@ func (r *ServiceImpl) GetRoleByName(ctx *authorizationv1.Context, name string) (
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get role by name")
 	}
+
+	if datagenRole == nil {
+		return nil, v1.ErrPermissionDenied(fmt.Errorf("role %s not found", name), v1.M{})
+	}
+
+	if err := r.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, datagenRole.Object); err != nil {
+		return nil, errors.Wrap(err, "failed to authorize role action")
+	}
+
 	return datagenRole, nil
 }
 
@@ -144,22 +155,11 @@ func (r *ServiceImpl) ListRoles(ctx *authorizationv1.Context, page, pageSize int
 }
 
 func (r *ServiceImpl) UpdateRole(ctx *authorizationv1.Context, params UpdateRoleParams) error {
-	curRole, err := r.rr.GetRole(ctx, params.ID)
-	if err != nil {
-		return errors.Wrap(err, "failed to get role")
-	}
-
-	if curRole == nil {
-		return v1.ErrNotFound(err, v1.M{
-			"role_id": params.ID,
-		})
-	}
-
-	if err := r.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, curRole.Object); err != nil {
+	if err := r.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, corev1.FromID(params.ID, rolesv1.Metadata)); err != nil {
 		return errors.Wrap(err, "failed to authorize role action")
 	}
 
-	_, err = r.rw.UpdateRole(ctx, params.ID, params.Name, params.Description, params.Hierarchy)
+	_, err := r.rw.UpdateRole(ctx, params.ID, params.Name, params.Description, params.Hierarchy)
 	if err != nil {
 		return errors.Wrap(err, "failed to update role")
 	}

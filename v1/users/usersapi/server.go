@@ -129,7 +129,8 @@ func (s *UsersServer) GetCurrentUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := s.service.GetUser(authCtx, authCtx.GetAuthedUser().Id)
+	authedUser := authCtx.GetAuthedUser()
+	user, err := s.service.GetUser(authCtx, authedUser.Id)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

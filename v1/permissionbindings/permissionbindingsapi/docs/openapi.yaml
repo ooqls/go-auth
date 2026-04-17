@@ -53,7 +53,7 @@ components:
             type: string
             format: uuid
 paths:
-  /auth/permission-binding:
+  /auth/permission-binding/:
     get:
       operationId: listPermissionBindings
       summary: Retrieves all permission bindings

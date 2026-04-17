@@ -11,6 +11,23 @@ var Metadata corev1.Metadata = corev1.Metadata{
 	Kind:  "Permissionv1",
 }
 
+func NewPermission(group, kind, name, actions string) *Permission {
+	return &Permission{
+		Object: corev1.Object{
+			Metadata: Metadata,
+			Name:     name,
+		},
+		Resource: corev1.Object{
+			Metadata: corev1.Metadata{
+				Group: group,
+				Kind:  kind,
+			},
+			Name: name,
+		},
+		Actions: actions,
+	}
+}
+
 type Permission struct {
 	corev1.Object
 	Resource corev1.Object `json:"resource"`

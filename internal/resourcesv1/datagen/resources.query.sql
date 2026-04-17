@@ -1,11 +1,11 @@
--- name: GetResourceByID :one
+-- name: GetResourceByName :one
 SELECT * FROM resourcesv1 WHERE resource_name = $1 AND resource_group = $2 AND resource_kind = $3;
 
 
 -- name: GetResources :many
 SELECT * FROM resourcesv1 WHERE resource_group = $1 AND ($2::text = '*' OR resource_kind = $2) ORDER BY resource_name LIMIT $3 OFFSET $4;
 
--- name: GetResourcesById :one
+-- name: GetResourceByID :one
 SELECT * FROM resourcesv1 WHERE id = $1;
 
 -- name: CreateResource :one
@@ -15,14 +15,16 @@ INSERT INTO resourcesv1 (
   resource_name,
   description,
   created_at,
-  updated_at
+  updated_at,
+  id
 ) VALUES (
   $1,
   $2,
   $3,
   $4,
   $5,
-  $6
+  $6,
+  $7
 ) RETURNING *;
 
 -- name: UpdateResource :one

@@ -2,6 +2,7 @@ package permissions
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/ooqls/go-auth/internal/authorizationv1"
 	"github.com/ooqls/go-auth/internal/corev1"
@@ -35,11 +36,8 @@ func NewServiceImpl(factory datav1.Factory) *ServiceImpl {
 }
 
 func (s *ServiceImpl) AddPermission(ctx *authorizationv1.Context, name, group, kind string, actions []string) error {
-	target := corev1.Object{
-		Metadata: corev1.PermissionsV1,
-		Name:     name,
-	}
-	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.CreateAction, target); err != nil {
+	perm := permissionsv1.NewPermission(group, kind, name, strings.Join(actions, ","))
+	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.CreateAction, perm.Object); err != nil {
 		return v1.ErrPermissionDenied(err, v1.M{"name": name, "group": group, "kind": kind})
 	}
 
@@ -47,11 +45,8 @@ func (s *ServiceImpl) AddPermission(ctx *authorizationv1.Context, name, group, k
 }
 
 func (s *ServiceImpl) DeletePermission(ctx *authorizationv1.Context, name, group, kind string) error {
-	target := corev1.Object{
-		Metadata: corev1.PermissionsV1,
-		Name:     name,
-	}
-	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.DeleteAction, target); err != nil {
+	target := permissionsv1.NewPermission(group, kind, name, "")
+	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.DeleteAction, target.Object); err != nil {
 		return v1.ErrPermissionDenied(err, v1.M{"name": name, "group": group, "kind": kind})
 	}
 

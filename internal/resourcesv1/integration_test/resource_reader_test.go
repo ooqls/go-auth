@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/getset/db/pgx"
 	"github.com/ooqls/go-auth/internal/corev1"
@@ -14,11 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createResource(t *testing.T, group, kind string) []resourcesv1.Resourcev1 {
+func createResource(group, kind string, n int) []resourcesv1.Resourcev1 {
 	var res []resourcesv1.Resourcev1
-	for i := 0; i < 10; i++ {
+	for i := 0; i < n; i++ {
 		res = append(res, resourcesv1.Resourcev1{
 			Object: corev1.Object{
+				Id:   uuid.New(),
 				Name: fmt.Sprintf("test%d", i),
 				Metadata: corev1.Metadata{
 					Group: group,
@@ -34,16 +36,16 @@ func populateDatabase(t *testing.T) []resourcesv1.Resourcev1 {
 	conn := pgx.GetPGX()
 	w := resourcesv1.NewSQLWriter(datagen.New(conn))
 	ctx := context.Background()
-	resObjs := createResource(t, "test", "object")
+	resObjs := createResource("test", "object", 10)
 	for _, res := range resObjs {
 		id := corev1.Object{
 			Name: res.Name,
 			Metadata: corev1.Metadata{
-				Group: res.Group,
-				Kind:  res.Kind,
+				Group: res.Metadata.Group,
+				Kind:  res.Metadata.Kind,
 			},
 		}
-		_, err := w.CreateResource(ctx, id.Group, id.Kind, id.Name, "test")
+		_, err := w.CreateResource(ctx, id.Metadata.Group, id.Metadata.Kind, id.Name, "test")
 		assert.Nilf(t, err, "should not error when creating resource")
 	}
 	time.Sleep(time.Second)
@@ -89,9 +91,5 @@ func TestResourceReaderWriter(t *testing.T) {
 		assert.Nilf(t, err, "should not error when querying resources")
 		assert.Equal(t, 0, len(retr), "should return no resources")
 
-		retr, err = r.GetResources(ctx, corev1.Metadata{
-			Group: "group",
-			Kind:  "unknown",
-		}, 10, 0)
 	})
 }

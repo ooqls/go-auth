@@ -233,7 +233,7 @@ func NewUnassignPermissionRequestWithBody(server string, contentType string, bod
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/auth/permission-binding")
+	operationPath := fmt.Sprintf("/auth/permission-binding/")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -262,7 +262,7 @@ func NewListPermissionBindingsRequest(server string, params *ListPermissionBindi
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/auth/permission-binding")
+	operationPath := fmt.Sprintf("/auth/permission-binding/")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -338,7 +338,7 @@ func NewAssignPermissionRequestWithBody(server string, contentType string, body 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/auth/permission-binding")
+	operationPath := fmt.Sprintf("/auth/permission-binding/")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -677,13 +677,13 @@ func ParseGetPermissionBindingsForRoleResponse(rsp *http.Response) (*GetPermissi
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Unassign permissions from roles
-	// (DELETE /auth/permission-binding)
+	// (DELETE /auth/permission-binding/)
 	UnassignPermission(c *gin.Context)
 	// Retrieves all permission bindings
-	// (GET /auth/permission-binding)
+	// (GET /auth/permission-binding/)
 	ListPermissionBindings(c *gin.Context, params ListPermissionBindingsParams)
 	// Assign permissions to roles
-	// (POST /auth/permission-binding)
+	// (POST /auth/permission-binding/)
 	AssignPermission(c *gin.Context)
 	// Retrieves all permission bindings for a specific role
 	// (GET /auth/permission-binding/role/{role_id})
@@ -810,8 +810,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.DELETE(options.BaseURL+"/auth/permission-binding", wrapper.UnassignPermission)
-	router.GET(options.BaseURL+"/auth/permission-binding", wrapper.ListPermissionBindings)
-	router.POST(options.BaseURL+"/auth/permission-binding", wrapper.AssignPermission)
+	router.DELETE(options.BaseURL+"/auth/permission-binding/", wrapper.UnassignPermission)
+	router.GET(options.BaseURL+"/auth/permission-binding/", wrapper.ListPermissionBindings)
+	router.POST(options.BaseURL+"/auth/permission-binding/", wrapper.AssignPermission)
 	router.GET(options.BaseURL+"/auth/permission-binding/role/:role_id", wrapper.GetPermissionBindingsForRole)
 }

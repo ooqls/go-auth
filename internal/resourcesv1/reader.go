@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/getset/log"
 	"github.com/ooqls/go-auth/internal/corev1"
@@ -24,6 +25,7 @@ func getPaginatedKey(metadata corev1.Metadata, offset, limit int32) string {
 }
 
 type Reader interface {
+	GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourcev1, error)
 	GetResource(ctx context.Context, name string, object corev1.Metadata) (*Resourcev1, error)
 	GetResources(ctx context.Context, object corev1.Metadata, limit, offset int32) ([]Resourcev1, error)
 	ClearCache(ctx context.Context) error
@@ -50,11 +52,43 @@ func (r *SQLReader) GetResource(ctx context.Context, name string, obj corev1.Met
 		return &cached[0], nil
 	}
 
-	res, err := r.q.GetResourceByID(ctx, datagen.GetResourceByIDParams{
+	res, err := r.q.GetResourceByName(ctx, datagen.GetResourceByNameParams{
 		ResourceName:  name,
 		ResourceGroup: obj.Group,
 		ResourceKind:  obj.Kind,
 	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("failed to get resource from database: %v", err)
+	}
+
+	resObj := &Resourcev1{
+		Object: corev1.Object{
+			Metadata: corev1.Metadata{
+				Group: res.ResourceGroup,
+				Kind:  res.ResourceKind,
+			},
+			Name: res.ResourceName,
+		},
+		Description: res.Description,
+		CreatedAt:   res.CreatedAt.Time,
+		UpdatedAt:   res.UpdatedAt.Time,
+	}
+
+	r.setCache(ctx, cacheKey, *resObj)
+	return resObj, nil
+}
+
+func (r *SQLReader) GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourcev1, error) {
+	cacheKey := getCacheKey(id.String(), Metadata)
+	if cached := r.getCache(ctx, id.String()); cached != nil {
+		return &cached[0], nil
+	}
+
+	res, err := r.q.GetResourceByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

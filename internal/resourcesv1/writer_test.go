@@ -75,7 +75,7 @@ func TestSQLWriter_CreateResource(t *testing.T) {
 				require.NoError(t, err)
 
 				// Verify the resource was created by querying it back
-				resource, err := testQueries.GetResourceByID(ctx, datagen.GetResourceByIDParams{
+				resource, err := testQueries.GetResourceByName(ctx, datagen.GetResourceByNameParams{
 					ResourceName:  tt.resName,
 					ResourceGroup: tt.group,
 					ResourceKind:  tt.kind,
@@ -107,7 +107,7 @@ func TestSQLWriter_DeleteResource(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the resource was deleted
-	_, err = testQueries.GetResourceByID(ctx, datagen.GetResourceByIDParams{
+	_, err = testQueries.GetResourceByName(ctx, datagen.GetResourceByNameParams{
 		ResourceName:  resName,
 		ResourceGroup: group,
 		ResourceKind:  kind,

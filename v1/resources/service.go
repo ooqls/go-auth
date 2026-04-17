@@ -1,11 +1,14 @@
 package resources
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
 	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/internal/resourcesv1"
+	v1 "github.com/ooqls/go-auth/v1"
 	"go.uber.org/zap"
 )
 
@@ -24,10 +27,24 @@ type ServiceImpl struct {
 }
 
 func NewServiceImpl(factory datav1.Factory) *ServiceImpl {
-	return &ServiceImpl{rw: factory.NewResourceWriter(), rr: factory.NewResourceReader(), ra: authorizationv1.NewAuthorizerImpl(factory)}
+	return &ServiceImpl{
+		rw: factory.NewResourceWriter(),
+		rr: factory.NewResourceReader(),
+		ra: authorizationv1.NewAuthorizerImpl(factory),
+	}
 }
 
-func (s *ServiceImpl) CreateResource(ctx authorizationv1.Context, group, kind, name, description string) (*Resourcev1, error) {
+func (s *ServiceImpl) CreateResource(ctx *authorizationv1.Context, group, kind, name, description string) (*Resourcev1, error) {
+	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.CreateAction, corev1.Object{
+		Metadata: corev1.Metadata{
+			Group: group,
+			Kind:  kind,
+		},
+		Name: name,
+	}); err != nil {
+		return nil, err
+	}
+
 	res, err := s.rw.CreateResource(ctx, group, kind, name, description)
 	if err != nil {
 		return nil, err
@@ -36,7 +53,17 @@ func (s *ServiceImpl) CreateResource(ctx authorizationv1.Context, group, kind, n
 	return res, nil
 }
 
-func (s *ServiceImpl) GetResource(ctx authorizationv1.Context, group, kind, name string) (*Resourcev1, error) {
+func (s *ServiceImpl) GetResource(ctx *authorizationv1.Context, group, kind, name string) (*Resourcev1, error) {
+	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, corev1.Object{
+		Metadata: corev1.Metadata{
+			Group: group,
+			Kind:  kind,
+		},
+		Name: name,
+	}); err != nil {
+		return nil, err
+	}
+
 	res, err := s.rr.GetResource(ctx, name, corev1.Metadata{Group: group, Kind: kind})
 	if err != nil {
 		return nil, err
@@ -45,12 +72,25 @@ func (s *ServiceImpl) GetResource(ctx authorizationv1.Context, group, kind, name
 	return res, nil
 }
 
-func (s *ServiceImpl) UpdateResourceName(ctx authorizationv1.Context, id uuid.UUID, name string, description *string) (*Resourcev1, error) {
+func (s *ServiceImpl) UpdateResourceName(ctx *authorizationv1.Context, id uuid.UUID, name string, description *string) (*Resourcev1, error) {
 	if err := s.rr.ClearCache(ctx); err != nil {
 		ctx.L().Warn("failed to clear reader cache", zap.Error(err))
 	}
 
-	res, err := s.rw.UpdateResource(ctx, id, &name, description)
+	res, err := s.rr.GetResourceByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if res == nil {
+		return nil, v1.ErrPermissionDenied(fmt.Errorf("resource with id %s not found", id), v1.M{})
+	}
+
+	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, res.Object); err != nil {
+		return nil, err
+	}
+
+	res, err = s.rw.UpdateResource(ctx, id, &name, description)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +98,7 @@ func (s *ServiceImpl) UpdateResourceName(ctx authorizationv1.Context, id uuid.UU
 	return res, nil
 }
 
-func (s *ServiceImpl) DeleteResource(ctx authorizationv1.Context, id uuid.UUID) error {
+func (s *ServiceImpl) DeleteResource(ctx *authorizationv1.Context, id uuid.UUID) error {
 	if err := s.rr.ClearCache(ctx); err != nil {
 		ctx.L().Warn("failed to clear reader cache", zap.Error(err))
 	}
@@ -66,14 +106,14 @@ func (s *ServiceImpl) DeleteResource(ctx authorizationv1.Context, id uuid.UUID) 
 	return s.rw.DeleteResourceById(ctx, id)
 }
 
-func (s *ServiceImpl) DeleteResourceByName(ctx authorizationv1.Context, group, kind, name string) error {
+func (s *ServiceImpl) DeleteResourceByName(ctx *authorizationv1.Context, group, kind, name string) error {
 	if err := s.rr.ClearCache(ctx); err != nil {
 		ctx.L().Warn("failed to clear reader cache", zap.Error(err))
 	}
 	return s.rw.DeleteResource(ctx, group, kind, name)
 }
 
-func (s *ServiceImpl) ListResources(ctx authorizationv1.Context, group, kind string, page, pageSize int32) ([]Resourcev1, error) {
+func (s *ServiceImpl) ListResources(ctx *authorizationv1.Context, group, kind string, page, pageSize int32) ([]Resourcev1, error) {
 	res, err := s.rr.GetResources(ctx, corev1.Metadata{Group: group, Kind: kind}, pageSize, (page-1)*pageSize)
 	if err != nil {
 		return nil, err

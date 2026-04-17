@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/ooqls/go-auth/internal/aggsv1"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
 	"github.com/ooqls/go-auth/internal/contexts"
 	"github.com/ooqls/go-auth/internal/datav1"
@@ -15,6 +16,7 @@ import (
 func AuthMiddleware(
 	authenticator Authenticator,
 	userReader userdata.Reader,
+	aggReader aggsv1.Reader,
 	l *zap.Logger) func(c *gin.Context) {
 
 	return func(c *gin.Context) {
@@ -89,6 +91,7 @@ func TrustedMiddleware(
 			c.Abort()
 			return
 		}
+
 		l.Info("setting authorization context", zap.String("user_id", userIDUUID.String()))
 		authCtx := authorizationv1.NewAuthorizationContext(*userObj)
 		c.Set("authorization_context", authCtx)

@@ -16,6 +16,7 @@ const (
 type Context struct {
 	context.Context
 	User              usersv1.User
+	UserHierarchy     int32
 	Domain            string
 	internalOperation bool
 	l                 *zap.Logger

@@ -32,13 +32,20 @@ func (s *ServiceImpl) GetRoleBindingsForUser(ctx *authorizationv1.Context, userI
 }
 
 func (s *ServiceImpl) AssignRoleToUser(ctx *authorizationv1.Context, userId uuid.UUID, roleId uuid.UUID) error {
+	if err := s.auth.IsAuthorizedToModifyUser(ctx, userId); err != nil {
+		return err
+	}
+
 	return s.rw.AddRoleToUser(ctx, userId, roleId)
 }
 
 func (s *ServiceImpl) UnassignRoleFromUser(ctx *authorizationv1.Context, userId uuid.UUID, roleId uuid.UUID) error {
+	if err := s.auth.IsAuthorizedToModifyUser(ctx, userId); err != nil {
+		return err
+	}
+
 	if err := s.rr.ClearCacheForUser(ctx, userId); err != nil {
 		ctx.L().Warn("failed to clear cache for reader", zap.Error(err))
 	}
-
 	return s.rw.RemoveRoleFromUser(ctx, userId, roleId)
 }

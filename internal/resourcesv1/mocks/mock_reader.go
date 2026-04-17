@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	uuid "github.com/google/uuid"
 	corev1 "github.com/ooqls/go-auth/internal/corev1"
 	resourcesv1 "github.com/ooqls/go-auth/internal/resourcesv1"
 )
@@ -63,6 +64,21 @@ func (m *MockReader) GetResource(ctx context.Context, name string, object corev1
 func (mr *MockReaderMockRecorder) GetResource(ctx, name, object interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResource", reflect.TypeOf((*MockReader)(nil).GetResource), ctx, name, object)
+}
+
+// GetResourceByID mocks base method.
+func (m *MockReader) GetResourceByID(ctx context.Context, id uuid.UUID) (*resourcesv1.Resourcev1, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceByID", ctx, id)
+	ret0, _ := ret[0].(*resourcesv1.Resourcev1)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResourceByID indicates an expected call of GetResourceByID.
+func (mr *MockReaderMockRecorder) GetResourceByID(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceByID", reflect.TypeOf((*MockReader)(nil).GetResourceByID), ctx, id)
 }
 
 // GetResources mocks base method.

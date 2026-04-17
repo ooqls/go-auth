@@ -11,9 +11,3 @@ SELECT u.id as userId,
        r.role_hierarchy as role_hierarchy FROM authv1_users
   LEFT JOIN authv1_roles r ON p.role_id = r.id
   WHERE u.id = $1;
-
--- name: GetActionsForUserByResource :many
-SELECT p.actions FROM authv1_permissions p
-  LEFT JOIN authv1_role_permissions rp ON p.id = rp.permission_id
-  LEFT JOIN authv1_user_roles ur ON rp.role_id = ur.role_id
-  WHERE ur.user_id = $1 AND p.resource_group = $2 AND p.resource_kind = $3 AND p.resource_name = $4;

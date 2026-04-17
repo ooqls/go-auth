@@ -61,6 +61,23 @@ CREATE TABLE IF NOT EXISTS resourcesv1 (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS challengesv1 (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  user_id uuid NOT NULL REFERENCES usersv1 (id) ON DELETE CASCADE,
+  challenge TEXT NOT NULL,
+  salt BYTEA NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now (),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS challengeattemptsv1 (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  challenge_id uuid NOT NULL REFERENCES challengesv1 (id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES usersv1 (id) ON DELETE CASCADE,
+  success BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now ()
+);
+
 -- +goose StatementEnd
 
 -- +goose Down
@@ -72,7 +89,8 @@ CREATE TABLE IF NOT EXISTS resourcesv1 (
 -- DROP TABLE IF EXISTS rolesv1;
 -- DROP TABLE IF EXISTS usersv1;
 -- DROP TABLE IF EXISTS resourcesv1;
-
+-- DROP TABLE IF EXISTS challengesv1;
+-- DROP TABLE IF EXISTS challengeattemptsv1;
 
 -- +goose StatementEnd
 
