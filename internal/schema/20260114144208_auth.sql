@@ -22,23 +22,14 @@ CREATE TABLE IF NOT EXISTS rolesv1 (
 );
 
 CREATE TABLE IF NOT EXISTS permissionsv1 (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(32) NOT NULL,
-  "group" VARCHAR(32) NOT NULL,
-  kind VARCHAR(32) NOT NULL,
-  actions TEXT NOT NULL DEFAULT '',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now (),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now (),
-  UNIQUE (name, "group", kind) -- Ensure permission uniqueness
+  permission VARCHAR(128) PRIMARY KEY DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS permissionbindingsv1 (
   role_id uuid NOT NULL REFERENCES rolesv1 (id) ON DELETE CASCADE,
-  permission_id uuid NOT NULL REFERENCES permissionsv1 (id) ON DELETE CASCADE,
-  PRIMARY KEY (role_id, permission_id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now (),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now (),
-  UNIQUE (role_id, permission_id) -- Ensure role-permission pairs are unique
+  permission VARCHAR(128) NOT NULL REFERENCES permissionsv1 (permission) ON DELETE CASCADE,
+  PRIMARY KEY (role_id, permission),
+  UNIQUE (role_id, permission) -- Ensure role-permission pairs are unique
 );
 
 CREATE TABLE IF NOT EXISTS rolebindingsv1 (
@@ -53,9 +44,9 @@ CREATE TABLE IF NOT EXISTS rolebindingsv1 (
 
 CREATE TABLE IF NOT EXISTS resourcesv1 (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
-  resource_group VARCHAR(32) NOT NULL,
-  resource_kind VARCHAR(32) NOT NULL,
-  resource_name VARCHAR(32) NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  rGroup VARCHAR(128) NOT NULL,
+  kind VARCHAR(128) NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

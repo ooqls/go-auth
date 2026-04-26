@@ -13,13 +13,12 @@ import (
 type Api string
 
 const (
-	ApiAuthentication     Api = "authentication"
-	ApiRoles              Api = "roles"
-	ApiUsers              Api = "users"
-	ApiPermissions        Api = "permissions"
-	ApiPermissionBindings Api = "permission-bindings"
-	ApiResources          Api = "resources"
-	ApiSeed               Api = "seed"
+	ApiAuthentication Api = "authentication"
+	ApiRoles          Api = "roles"
+	ApiUsers          Api = "users"
+	ApiPermissions    Api = "permissions"
+	ApiResources      Api = "resources"
+	ApiSeed           Api = "seed"
 )
 
 var api string
@@ -58,11 +57,6 @@ func main() {
 		app, err = BuildBaseGinApp(
 			NewResourcesServer,
 			ResourceHandlers(),
-		)
-	case string(ApiPermissionBindings):
-		app, err = BuildBaseGinApp(
-			NewPermissionBindingsServer,
-			PermissionBindingsHandlers(),
 		)
 	case string(ApiSeed):
 		app = Seed()

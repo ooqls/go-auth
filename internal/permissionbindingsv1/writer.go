@@ -9,10 +9,10 @@ import (
 )
 
 type Writer interface {
-	AssignPermission(ctx contexts.LContext, roleID uuid.UUID, permissionID uuid.UUID) error
-	UnassignPermission(ctx contexts.LContext, roleID uuid.UUID, permissionID uuid.UUID) error
+	AssignPermission(ctx contexts.LContext, roleID uuid.UUID, permission string) error
+	UnassignPermission(ctx contexts.LContext, roleID uuid.UUID, permission string) error
 	UnassignAllPermissions(ctx contexts.LContext, roleID uuid.UUID) error
-	UnassignPermissionFromAllRoles(ctx contexts.LContext, permissionID uuid.UUID) error
+	UnassignPermissionFromAllRoles(ctx contexts.LContext, permission string) error
 }
 
 func NewSQLWriter(q datagen.Queries) Writer {
@@ -25,10 +25,10 @@ type SQLWriter struct {
 	q datagen.Queries
 }
 
-func (w *SQLWriter) AssignPermission(ctx contexts.LContext, roleID uuid.UUID, permissionID uuid.UUID) error {
+func (w *SQLWriter) AssignPermission(ctx contexts.LContext, roleID uuid.UUID, permission string) error {
 	if err := w.q.AssignPermission(ctx, datagen.AssignPermissionParams{
 		RoleID:       roleID,
-		PermissionID: permissionID,
+		Permission: permission,
 	}); err != nil {
 		return err
 	}
@@ -36,10 +36,10 @@ func (w *SQLWriter) AssignPermission(ctx contexts.LContext, roleID uuid.UUID, pe
 	return nil
 }
 
-func (w *SQLWriter) UnassignPermission(ctx contexts.LContext, roleID uuid.UUID, permissionID uuid.UUID) error {
+func (w *SQLWriter) UnassignPermission(ctx contexts.LContext, roleID uuid.UUID, permission string) error {
 	return w.q.UnassignPermission(ctx, datagen.UnassignPermissionParams{
-		PermissionID: permissionID,
-		RoleID:       roleID,
+		Permission: permission,
+		RoleID:     roleID,
 	})
 }
 
@@ -47,6 +47,6 @@ func (w *SQLWriter) UnassignAllPermissions(ctx contexts.LContext, roleID uuid.UU
 	return w.q.UnassignAllPermissions(ctx, roleID)
 }
 
-func (w *SQLWriter) UnassignPermissionFromAllRoles(ctx contexts.LContext, permissionID uuid.UUID) error {
-	return w.q.UnassignFromAllRoles(ctx, permissionID)
+func (w *SQLWriter) UnassignPermissionFromAllRoles(ctx contexts.LContext, permission string) error {
+	return w.q.UnassignFromAllRoles(ctx, permission)
 }

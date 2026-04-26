@@ -30,6 +30,12 @@ type CreatedResource struct {
 
 // ListResourcesParams defines parameters for ListResources.
 type ListResourcesParams struct {
+	// Group The group of the resources
+	Group *string `form:"group,omitempty" json:"group,omitempty"`
+
+	// Kind The kind of the resources
+	Kind *string `form:"kind,omitempty" json:"kind,omitempty"`
+
 	// Page The page number
 	Page *int `form:"page,omitempty" json:"page,omitempty"`
 
@@ -38,12 +44,6 @@ type ListResourcesParams struct {
 
 	// Name The name of the resource
 	Name *string `form:"name,omitempty" json:"name,omitempty"`
-
-	// Group The group of the resource
-	Group *string `form:"group,omitempty" json:"group,omitempty"`
-
-	// Kind The kind of the resource
-	Kind *string `form:"kind,omitempty" json:"kind,omitempty"`
 }
 
 // CreateResourceJSONRequestBody defines body for CreateResource for application/json ContentType.
@@ -139,10 +139,10 @@ type ClientInterface interface {
 	UpdateResource(ctx context.Context, body UpdateResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteResource request
-	DeleteResource(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteResource(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetResource request
-	GetResource(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetResource(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListResources(ctx context.Context, params *ListResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -205,8 +205,8 @@ func (c *Client) UpdateResource(ctx context.Context, body UpdateResourceJSONRequ
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteResource(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteResourceRequest(c.Server, name, group, kind)
+func (c *Client) DeleteResource(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteResourceRequest(c.Server, group, kind, name)
 	if err != nil {
 		return nil, err
 	}
@@ -217,8 +217,8 @@ func (c *Client) DeleteResource(ctx context.Context, name string, group string, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetResource(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetResourceRequest(c.Server, name, group, kind)
+func (c *Client) GetResource(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetResourceRequest(c.Server, group, kind, name)
 	if err != nil {
 		return nil, err
 	}
@@ -250,6 +250,38 @@ func NewListResourcesRequest(server string, params *ListResourcesParams) (*http.
 
 	if params != nil {
 		queryValues := queryURL.Query()
+
+		if params.Group != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "group", runtime.ParamLocationQuery, *params.Group); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "kind", runtime.ParamLocationQuery, *params.Kind); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
 
 		if params.Page != nil {
 
@@ -286,38 +318,6 @@ func NewListResourcesRequest(server string, params *ListResourcesParams) (*http.
 		if params.Name != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name", runtime.ParamLocationQuery, *params.Name); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Group != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "group", runtime.ParamLocationQuery, *params.Group); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.Kind != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "kind", runtime.ParamLocationQuery, *params.Kind); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -423,26 +423,26 @@ func NewUpdateResourceRequestWithBody(server string, contentType string, body io
 }
 
 // NewDeleteResourceRequest generates requests for DeleteResource
-func NewDeleteResourceRequest(server string, name string, group string, kind string) (*http.Request, error) {
+func NewDeleteResourceRequest(server string, group string, kind string, name string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "group", runtime.ParamLocationPath, group)
 	if err != nil {
 		return nil, err
 	}
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "group", runtime.ParamLocationPath, group)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "kind", runtime.ParamLocationPath, kind)
 	if err != nil {
 		return nil, err
 	}
 
 	var pathParam2 string
 
-	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "kind", runtime.ParamLocationPath, kind)
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
 	if err != nil {
 		return nil, err
 	}
@@ -471,26 +471,26 @@ func NewDeleteResourceRequest(server string, name string, group string, kind str
 }
 
 // NewGetResourceRequest generates requests for GetResource
-func NewGetResourceRequest(server string, name string, group string, kind string) (*http.Request, error) {
+func NewGetResourceRequest(server string, group string, kind string, name string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "group", runtime.ParamLocationPath, group)
 	if err != nil {
 		return nil, err
 	}
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "group", runtime.ParamLocationPath, group)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "kind", runtime.ParamLocationPath, kind)
 	if err != nil {
 		return nil, err
 	}
 
 	var pathParam2 string
 
-	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "kind", runtime.ParamLocationPath, kind)
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
 	if err != nil {
 		return nil, err
 	}
@@ -575,10 +575,10 @@ type ClientWithResponsesInterface interface {
 	UpdateResourceWithResponse(ctx context.Context, body UpdateResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateResourceResponse, error)
 
 	// DeleteResourceWithResponse request
-	DeleteResourceWithResponse(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*DeleteResourceResponse, error)
+	DeleteResourceWithResponse(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*DeleteResourceResponse, error)
 
 	// GetResourceWithResponse request
-	GetResourceWithResponse(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*GetResourceResponse, error)
+	GetResourceWithResponse(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*GetResourceResponse, error)
 }
 
 type ListResourcesResponse struct {
@@ -735,8 +735,8 @@ func (c *ClientWithResponses) UpdateResourceWithResponse(ctx context.Context, bo
 }
 
 // DeleteResourceWithResponse request returning *DeleteResourceResponse
-func (c *ClientWithResponses) DeleteResourceWithResponse(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*DeleteResourceResponse, error) {
-	rsp, err := c.DeleteResource(ctx, name, group, kind, reqEditors...)
+func (c *ClientWithResponses) DeleteResourceWithResponse(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*DeleteResourceResponse, error) {
+	rsp, err := c.DeleteResource(ctx, group, kind, name, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -744,8 +744,8 @@ func (c *ClientWithResponses) DeleteResourceWithResponse(ctx context.Context, na
 }
 
 // GetResourceWithResponse request returning *GetResourceResponse
-func (c *ClientWithResponses) GetResourceWithResponse(ctx context.Context, name string, group string, kind string, reqEditors ...RequestEditorFn) (*GetResourceResponse, error) {
-	rsp, err := c.GetResource(ctx, name, group, kind, reqEditors...)
+func (c *ClientWithResponses) GetResourceWithResponse(ctx context.Context, group string, kind string, name string, reqEditors ...RequestEditorFn) (*GetResourceResponse, error) {
+	rsp, err := c.GetResource(ctx, group, kind, name, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -894,11 +894,11 @@ type ServerInterface interface {
 	// (PUT /auth/resource)
 	UpdateResource(c *gin.Context)
 	// Delete a resource
-	// (DELETE /auth/resource/{name}/{group}/{kind})
-	DeleteResource(c *gin.Context, name string, group string, kind string)
+	// (DELETE /auth/resource/{group}/{kind}/{name})
+	DeleteResource(c *gin.Context, group string, kind string, name string)
 	// Get a resource
-	// (GET /auth/resource/{name}/{group}/{kind})
-	GetResource(c *gin.Context, name string, group string, kind string)
+	// (GET /auth/resource/{group}/{kind}/{name})
+	GetResource(c *gin.Context, group string, kind string, name string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -917,6 +917,22 @@ func (siw *ServerInterfaceWrapper) ListResources(c *gin.Context) {
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListResourcesParams
+
+	// ------------- Optional query parameter "group" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "group", c.Request.URL.Query(), &params.Group)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter group: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "kind", c.Request.URL.Query(), &params.Kind)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter kind: %w", err), http.StatusBadRequest)
+		return
+	}
 
 	// ------------- Optional query parameter "page" -------------
 
@@ -939,22 +955,6 @@ func (siw *ServerInterfaceWrapper) ListResources(c *gin.Context) {
 	err = runtime.BindQueryParameter("form", true, false, "name", c.Request.URL.Query(), &params.Name)
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter name: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "group" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "group", c.Request.URL.Query(), &params.Group)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter group: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "kind" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "kind", c.Request.URL.Query(), &params.Kind)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter kind: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -999,15 +999,6 @@ func (siw *ServerInterfaceWrapper) DeleteResource(c *gin.Context) {
 
 	var err error
 
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "name", c.Param("name"), &name, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter name: %w", err), http.StatusBadRequest)
-		return
-	}
-
 	// ------------- Path parameter "group" -------------
 	var group string
 
@@ -1026,6 +1017,15 @@ func (siw *ServerInterfaceWrapper) DeleteResource(c *gin.Context) {
 		return
 	}
 
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", c.Param("name"), &name, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter name: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -1033,7 +1033,7 @@ func (siw *ServerInterfaceWrapper) DeleteResource(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.DeleteResource(c, name, group, kind)
+	siw.Handler.DeleteResource(c, group, kind, name)
 }
 
 // GetResource operation middleware
@@ -1041,15 +1041,6 @@ func (siw *ServerInterfaceWrapper) GetResource(c *gin.Context) {
 
 	var err error
 
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "name", c.Param("name"), &name, runtime.BindStyledParameterOptions{Explode: false, Required: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter name: %w", err), http.StatusBadRequest)
-		return
-	}
-
 	// ------------- Path parameter "group" -------------
 	var group string
 
@@ -1068,6 +1059,15 @@ func (siw *ServerInterfaceWrapper) GetResource(c *gin.Context) {
 		return
 	}
 
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", c.Param("name"), &name, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter name: %w", err), http.StatusBadRequest)
+		return
+	}
+
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
 		if c.IsAborted() {
@@ -1075,7 +1075,7 @@ func (siw *ServerInterfaceWrapper) GetResource(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetResource(c, name, group, kind)
+	siw.Handler.GetResource(c, group, kind, name)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -1108,6 +1108,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/auth/resource", wrapper.ListResources)
 	router.POST(options.BaseURL+"/auth/resource", wrapper.CreateResource)
 	router.PUT(options.BaseURL+"/auth/resource", wrapper.UpdateResource)
-	router.DELETE(options.BaseURL+"/auth/resource/:name/:group/:kind", wrapper.DeleteResource)
-	router.GET(options.BaseURL+"/auth/resource/:name/:group/:kind", wrapper.GetResource)
+	router.DELETE(options.BaseURL+"/auth/resource/:group/:kind/:name", wrapper.DeleteResource)
+	router.GET(options.BaseURL+"/auth/resource/:group/:kind/:name", wrapper.GetResource)
 }

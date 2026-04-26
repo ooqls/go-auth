@@ -21,21 +21,16 @@ type DeleteResponse struct {
 
 // Permission defines model for Permission.
 type Permission struct {
-	Actions       []string           `json:"actions"`
-	CreatedAt     time.Time          `json:"created_at"`
-	Id            openapi_types.UUID `json:"id"`
-	ResourceGroup string             `json:"resource_group"`
-	ResourceKind  string             `json:"resource_kind"`
-	ResourceName  string             `json:"resource_name"`
-	UpdatedAt     time.Time          `json:"updated_at"`
+	CreatedAt  time.Time          `json:"created_at"`
+	Id         openapi_types.UUID `json:"id"`
+	Permission string             `json:"permission"`
+	UpdatedAt  time.Time          `json:"updated_at"`
 }
 
 // Resource defines model for Resource.
 type Resource struct {
 	CreatedAt time.Time          `json:"created_at"`
-	Group     string             `json:"group"`
 	Id        openapi_types.UUID `json:"id"`
-	Kind      string             `json:"kind"`
 	Name      string             `json:"name"`
 	UpdatedAt *time.Time         `json:"updated_at,omitempty"`
 }

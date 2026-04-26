@@ -29,28 +29,21 @@ type Challengesv1 struct {
 type Permissionbindingsv1 struct {
 	RoleID       uuid.UUID
 	PermissionID uuid.UUID
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
 }
 
 type Permissionsv1 struct {
-	ID        uuid.UUID
-	Name      string
-	Group     string
-	Kind      string
-	Actions   string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID         uuid.UUID
+	Permission string
 }
 
 type Resourcesv1 struct {
-	ID            uuid.UUID
-	ResourceGroup string
-	ResourceKind  string
-	ResourceName  string
-	Description   string
-	CreatedAt     pgtype.Timestamptz
-	UpdatedAt     pgtype.Timestamptz
+	ID          uuid.UUID
+	Name        string
+	Rgroup      string
+	Kind        string
+	Description string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 type Rolebindingsv1 struct {

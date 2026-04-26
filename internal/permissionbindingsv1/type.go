@@ -13,5 +13,5 @@ var Metadata corev1.Metadata = corev1.Metadata{
 type Permissionbindingv1 struct {
 	corev1.Metadata
 	RoleID       uuid.UUID
-	PermissionID uuid.UUID
+	Permission string
 }

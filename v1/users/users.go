@@ -97,9 +97,8 @@ func (u *UserServiceImpl) CreateUserWithRandomPassword(ctx *authorizationv1.Cont
 }
 
 func (u *UserServiceImpl) CreateUserWithPassword(ctx *authorizationv1.Context, email string, username string, key []byte, salt []byte) (*User, error) {
-	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.CreateAction, corev1.Object{
-		Metadata: usersv1.Metadata,
-	}); err != nil {
+	target := corev1.ToTargetString(usersv1.Metadata)
+	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.CreateAction, target); err != nil {
 		return nil, v1.ErrPermissionDenied(err, v1.M{"username": username})
 	}
 
@@ -125,12 +124,10 @@ func (u *UserServiceImpl) CreateUserWithPassword(ctx *authorizationv1.Context, e
 }
 
 func (u *UserServiceImpl) GetUser(ctx *authorizationv1.Context, id uuid.UUID) (*User, error) {
+	target := corev1.ToTargetString(usersv1.Metadata)
 	if err := u.ua.IsAuthorizedToPerformAction(ctx,
 		authorizationv1.ReadAction,
-		corev1.Object{
-			Id:       id,
-			Metadata: usersv1.Metadata,
-		},
+		target,
 	); err != nil {
 		return nil, err
 	}
@@ -186,6 +183,12 @@ func (u *UserServiceImpl) GetUsers(ctx *authorizationv1.Context, page int, pageS
 // }
 
 func (u *UserServiceImpl) GetUserByUsername(ctx *authorizationv1.Context, username string) (*User, error) {
+
+	target := corev1.ToTargetString(usersv1.Metadata)
+	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, target); err != nil {
+		return nil, err
+	}
+
 	user, err := u.userR.GetUserByUsername(ctx, username)
 	if err != nil {
 		u.l.Error("failed to get user by username", zap.Error(err))
@@ -196,19 +199,15 @@ func (u *UserServiceImpl) GetUserByUsername(ctx *authorizationv1.Context, userna
 		return nil, nil
 	}
 
-	if err := u.ua.IsAuthorizedToPerformAction(ctx,
-		authorizationv1.ReadAction,
-		corev1.Object{
-			Id:       user.Id,
-			Metadata: usersv1.Metadata,
-		}); err != nil {
-		return nil, err
-	}
-
 	return user, nil
 }
 
 func (u *UserServiceImpl) UpdateUserEmail(ctx *authorizationv1.Context, id uuid.UUID, email string) error {
+	target := corev1.ToTargetString(usersv1.Metadata)
+	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, target); err != nil {
+		return err
+	}
+
 	curUser, err := u.userR.GetUser(ctx, id)
 	if err != nil {
 		u.l.Error("failed to get user", zap.Error(err))
@@ -219,13 +218,6 @@ func (u *UserServiceImpl) UpdateUserEmail(ctx *authorizationv1.Context, id uuid.
 		return v1.ErrNotFound(err, v1.M{
 			"user_id": id,
 		})
-	}
-
-	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, corev1.Object{
-		Id:       id,
-		Metadata: usersv1.Metadata,
-	}); err != nil {
-		return err
 	}
 
 	if err := u.userW.UpdateUser(ctx, id, datagen.UpdateUserParams{
@@ -242,6 +234,14 @@ func (u *UserServiceImpl) UpdateUserEmail(ctx *authorizationv1.Context, id uuid.
 }
 
 func (u *UserServiceImpl) UpdateUserKey(ctx *authorizationv1.Context, id uuid.UUID, key []byte) error {
+
+	if ctx.User.Id != id {
+		target := corev1.ToTargetString(usersv1.Metadata)
+		if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateKeyAction, target); err != nil {
+			return err
+		}
+	}
+
 	user, err := u.userR.GetUser(ctx, id)
 	if err != nil {
 		u.l.Error("failed to get user", zap.Error(err))
@@ -252,13 +252,6 @@ func (u *UserServiceImpl) UpdateUserKey(ctx *authorizationv1.Context, id uuid.UU
 		return v1.ErrNotFound(err, v1.M{
 			"user_id": id,
 		})
-	}
-
-	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateKeyAction, corev1.Object{
-		Id:       id,
-		Metadata: usersv1.Metadata,
-	}); err != nil {
-		return err
 	}
 
 	err = crypto.VerifyGCMAESKey(key)
@@ -293,10 +286,8 @@ func (u *UserServiceImpl) UpdateUserKey(ctx *authorizationv1.Context, id uuid.UU
 }
 
 func (u *UserServiceImpl) DeleteUser(ctx *authorizationv1.Context, id uuid.UUID) error {
-	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.DeleteAction, corev1.Object{
-		Id:       id,
-		Metadata: usersv1.Metadata,
-	}); err != nil {
+	target := corev1.ToTargetString(usersv1.Metadata)
+	if err := u.ua.IsAuthorizedToPerformAction(ctx, authorizationv1.DeleteAction, target); err != nil {
 		return err
 	}
 

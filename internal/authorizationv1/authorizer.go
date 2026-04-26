@@ -3,11 +3,12 @@ package authorizationv1
 //go:generate go run github.com/golang/mock/mockgen -source=authorizer.go -destination=mocks/mock_authorizer.go -package=mocks
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/ooqls/go-auth/internal/aggsv1"
 	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/datav1"
-	"github.com/ooqls/go-auth/internal/permissionbindingsv1"
 	"github.com/ooqls/go-auth/internal/permissionsv1"
 	"github.com/ooqls/go-auth/internal/rolebindingsv1"
 	"github.com/ooqls/go-auth/internal/rolesv1"
@@ -17,13 +18,12 @@ import (
 var _ Authorizer = &AuthorizerImpl{}
 
 type Authorizer interface {
-	IsAuthorizedToAssignPermission(ctx *Context, roleID uuid.UUID, permID uuid.UUID) error
+	IsAuthorizedToAssignPermission(ctx *Context, roleID uuid.UUID, permission string) error
 	IsAuthorizedToUnassignPermission(ctx *Context, roleID uuid.UUID) error
 	IsAuthorizedToModifyUser(ctx *Context, targetUserID uuid.UUID) error
 	IsAuthorizedToReadUserRoles(ctx *Context, targetUserID uuid.UUID) error
 	IsAuthorizedToReadRolePermissions(ctx *Context, roleID uuid.UUID) error
-	IsAuthorizedToPerformAction(ctx *Context, action Action, target corev1.Object) error
-	IsAuthorizedToPerformGlobalAction(ctx *Context, action Action, target corev1.Metadata) error
+	IsAuthorizedToPerformAction(ctx *Context, action Action, target string) error
 }
 
 type AuthorizerImpl struct {
@@ -42,7 +42,7 @@ func NewAuthorizerImpl(fact datav1.Factory) Authorizer {
 	}
 }
 
-func (a *AuthorizerImpl) IsAuthorizedToAssignPermission(ctx *Context, roleID uuid.UUID, permID uuid.UUID) error {
+func (a *AuthorizerImpl) IsAuthorizedToAssignPermission(ctx *Context, roleID uuid.UUID, permission string) error {
 	if ctx.IsInternalOperation() {
 		return nil
 	}
@@ -64,7 +64,7 @@ func (a *AuthorizerImpl) IsAuthorizedToAssignPermission(ctx *Context, roleID uui
 	}
 
 	pMeta := permissionsv1.Metadata
-	authed, err := a.pReader.HasPermission(ctx, requester.Id, permID.String(), pMeta.Group, pMeta.Kind, string(AssignAction))
+	authed, err := a.pReader.HasPermission(ctx, requester.Id, corev1.ToPermissionString(pMeta, string(AssignAction)))
 	if !authed {
 		ctx.L().Debug("assign permission denied: requester lacks permission binding assign permission")
 		return ErrPermissionDenied
@@ -95,8 +95,7 @@ func (a *AuthorizerImpl) IsAuthorizedToUnassignPermission(ctx *Context, roleID u
 		return ErrPermissionDenied
 	}
 
-	pbMeta := permissionbindingsv1.Metadata
-	authed, err := a.pReader.HasPermission(ctx, requester.Id, "*", pbMeta.Group, pbMeta.Kind, string(DeleteAction))
+	authed, err := a.pReader.HasPermission(ctx, requester.Id, corev1.ToPermissionString(permissionsv1.Metadata, string(UnassignAction)))
 	if err != nil {
 		return err
 	}
@@ -158,18 +157,7 @@ func (a *AuthorizerImpl) IsAuthorizedToReadUserRoles(ctx *Context, targetUserID 
 		return ErrPermissionDenied
 	}
 
-	rbMeta := rolebindingsv1.Metadata
-	hasRolebindingsPerm, err := a.pReader.HasPermission(ctx, requester.Id, "*", rbMeta.Group, rbMeta.Kind, string(ReadAction))
-	if err != nil {
-		return err
-	}
-
-	if !hasRolebindingsPerm {
-		ctx.L().Debug("read user roles denied: requester lacks rolebindings read permission")
-		return ErrPermissionDenied
-	}
-
-	hasRolesPerm, err := a.pReader.HasPermission(ctx, requester.Id, "*", "roles", rolesv1.Kind, string(ReadAction))
+	hasRolesPerm, err := a.pReader.HasPermission(ctx, requester.Id, corev1.ToPermissionString(rolesv1.Metadata, string(ReadAction)))
 	if err != nil {
 		return err
 	}
@@ -187,40 +175,29 @@ func (a *AuthorizerImpl) IsAuthorizedToReadRolePermissions(ctx *Context, roleID 
 		return nil
 	}
 
-	roleAgg, err := a.aReader.GetRoleAgg(ctx, roleID)
+	role, err := a.rReader.GetRole(ctx, roleID)
 	if err != nil {
 		return err
 	}
-
 	requester := ctx.GetAuthedUser()
 	requesterHierarchy, err := a.aReader.GetUserHierarchy(ctx, requester.Id)
 	if err != nil {
 		return err
 	}
 
-	if roleAgg != nil && requesterHierarchy <= roleAgg.Hierarchy {
+	if role != nil && requesterHierarchy <= role.Hierarchy {
 		ctx.L().Debug("read role permissions denied: requester hierarchy does not exceed role hierarchy")
 		return ErrPermissionDenied
 	}
 
-	pbMeta := permissionbindingsv1.Metadata
-	hasBindingsPerm, err := a.pReader.HasPermission(ctx, requester.Id, "*", pbMeta.Group, pbMeta.Kind, string(ReadAction))
+	permissionMeta := permissionsv1.Metadata
+	hasPermissionsPerm, err := a.pReader.HasPermission(ctx, requester.Id, corev1.ToPermissionString(permissionMeta, string(ReadAction)))
 	if err != nil {
+		ctx.L().Error("failed to check if user has permission", zap.Error(err))
 		return err
 	}
 
-	if !hasBindingsPerm {
-		ctx.L().Debug("read role permissions denied: requester lacks permission bindings read permission")
-		return ErrPermissionDenied
-	}
-
-	pMeta := permissionsv1.Metadata
-	hasPermsPerm, err := a.pReader.HasPermission(ctx, requester.Id, "*", pMeta.Group, pMeta.Kind, string(ReadAction))
-	if err != nil {
-		return err
-	}
-
-	if !hasPermsPerm {
+	if !hasPermissionsPerm {
 		ctx.L().Debug("read role permissions denied: requester lacks permissions read permission")
 		return ErrPermissionDenied
 	}
@@ -228,46 +205,21 @@ func (a *AuthorizerImpl) IsAuthorizedToReadRolePermissions(ctx *Context, roleID 
 	return nil
 }
 
-func (a *AuthorizerImpl) IsAuthorizedToPerformAction(ctx *Context, action Action, target corev1.Object) error {
+func (a *AuthorizerImpl) IsAuthorizedToPerformAction(ctx *Context, action Action, target string) error {
 	if ctx.IsInternalOperation() {
 		return nil
 	}
 
 	requester := ctx.GetAuthedUser()
 
-	authed, err := a.pReader.HasPermission(ctx, requester.Id, target.Name, target.Group, target.Kind, action)
+	authed, err := a.pReader.HasPermission(ctx, requester.Id, fmt.Sprintf("%s:%s", action, target))
 	if err != nil {
 		return err
 	}
 
 	if !authed {
 		ctx.L().Debug("failed to perform action because requester does not have permission",
-			zap.String("name", target.Name),
-			zap.String("group", target.Group),
-			zap.String("kind", target.Kind),
-		)
-		return ErrPermissionDenied
-	}
-
-	return nil
-}
-
-func (a *AuthorizerImpl) IsAuthorizedToPerformGlobalAction(ctx *Context, action Action, target corev1.Metadata) error {
-	if ctx.IsInternalOperation() {
-		return nil
-	}
-
-	requester := ctx.GetAuthedUser()
-
-	authed, err := a.pReader.HasPermission(ctx, requester.Id, "*", target.Group, target.Kind, action)
-	if err != nil {
-		return err
-	}
-
-	if !authed {
-		ctx.L().Debug("failed to perform global action because requester does not have permission",
-			zap.String("group", target.Group),
-			zap.String("kind", target.Kind),
+			zap.String("target", target),
 			zap.String("action", string(action)),
 		)
 		return ErrPermissionDenied
@@ -275,3 +227,27 @@ func (a *AuthorizerImpl) IsAuthorizedToPerformGlobalAction(ctx *Context, action 
 
 	return nil
 }
+
+// func (a *AuthorizerImpl) IsAuthorizedToPerformGlobalAction(ctx *Context, action Action, target corev1.Metadata) error {
+// 	if ctx.IsInternalOperation() {
+// 		return nil
+// 	}
+
+// 	requester := ctx.GetAuthedUser()
+
+// 	authed, err := a.pReader.HasPermission(ctx, requester.Id, action)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	if !authed {
+// 		ctx.L().Debug("failed to perform global action because requester does not have permission",
+// 			zap.String("group", target.Group),
+// 			zap.String("kind", target.Kind),
+// 			zap.String("action", string(action)),
+// 		)
+// 		return ErrPermissionDenied
+// 	}
+
+// 	return nil
+// }

@@ -18,11 +18,11 @@ var _ Reader = &SQLReader{}
 
 //go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
 type Reader interface {
-	GetPermissions(ctx contexts.LContext, page int, pageSize int) ([]Permission, error)
-	GetPermission(ctx contexts.LContext, name, group, kind string) (*Permission, error)
-	HasPermission(ctx contexts.LContext, userID uuid.UUID, name, group, kind, actions string) (bool, error)
-	GetPermissionForUserByGrouo(ctx contexts.LContext, userID uuid.UUID, group string) ([]Permission, error)
-	GetPermissionForUser(ctx contexts.LContext, userID uuid.UUID, kind, group string) ([]Permission, error)
+	GetPermissions(ctx contexts.LContext, page, pageSize int) ([]Permission, error)
+	GetPermission(ctx contexts.LContext, permission string) (*Permission, error)
+	HasPermission(ctx contexts.LContext, userID uuid.UUID, permission string) (bool, error)
+	GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error)
+	GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error)
 	ClearCache(ctx context.Context) error
 }
 
@@ -38,7 +38,7 @@ type SQLReader struct {
 	q     *datagen.Queries
 }
 
-func (r *SQLReader) GetPermissions(ctx contexts.LContext, page int, pageSize int) ([]Permission, error) {
+func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) ([]Permission, error) {
 	cacheKey := fmt.Sprintf("permissions:%d:%d", page, pageSize)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
@@ -55,7 +55,10 @@ func (r *SQLReader) GetPermissions(ctx contexts.LContext, page int, pageSize int
 
 	var perms []Permission
 	for _, row := range rows {
-		perms = append(perms, *fromDatagenPermission(row))
+		perms = append(perms, Permission{
+			Metadata:   Metadata,
+			Permission: row,
+		})
 	}
 
 	if r.cache != nil {
@@ -67,69 +70,60 @@ func (r *SQLReader) GetPermissions(ctx contexts.LContext, page int, pageSize int
 	return perms, nil
 }
 
-func (r *SQLReader) GetPermission(ctx contexts.LContext, name, group, kind string) (*Permission, error) {
-	cacheKey := fmt.Sprintf("permission:%s:%s:%s", name, group, kind)
+func (r *SQLReader) GetPermission(ctx contexts.LContext, permission string) (*Permission, error) {
+	cacheKey := fmt.Sprintf("permission:%s", permission)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
 		return &cached[0], nil
 	}
 
-	row, err := r.q.GetPermission(ctx, datagen.GetPermissionParams{
-		Name:  name,
-		Group: group,
-		Kind:  kind,
-	})
+	row, err := r.q.GetPermissionByName(ctx, permission)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
-		return nil, v1.ErrInternal(err, v1.M{"name": name, "group": group, "kind": kind})
+		return nil, v1.ErrInternal(err, v1.M{"permission": permission})
 	}
 
-	p := fromDatagenPermission(row)
+	p := Permission{
+		Metadata:   Metadata,
+		Permission: row,
+	}
+
 	if r.cache != nil {
-		if err := r.cache.Set(ctx, cacheKey, []Permission{*p}); err != nil {
+		if err := r.cache.Set(ctx, cacheKey, []Permission{p}); err != nil {
 			ctx.L().Error("failed to set cache", zap.Error(err))
 		}
 	}
 
-	return p, nil
+	return &p, nil
 }
 
-func (r *SQLReader) HasPermission(ctx contexts.LContext, userID uuid.UUID, name, group, kind, actions string) (bool, error) {
-	// Reuse GetPermissionForUser so the cache is shared; filter by name in Go.
-	perms, err := r.q.HasPermission(ctx, datagen.HasPermissionParams{
-		UserID:  userID,
-		Name:    name,
-		Group:   group,
-		Kind:    kind,
-		Actions: actions,
+func (r *SQLReader) HasPermission(ctx contexts.LContext, userID uuid.UUID, permission string) (bool, error) {
+	return r.q.HasPermission(ctx, datagen.HasPermissionParams{
+		UserID:     userID,
+		Permission: permission,
 	})
-	if err != nil {
-		return false, err
-	}
-
-	return perms, nil
 }
 
-func (r *SQLReader) GetPermissionForUserByGrouo(ctx contexts.LContext, userID uuid.UUID, group string) ([]Permission, error) {
-	cacheKey := fmt.Sprintf("permissions:user:%s:group:%s", userID, group)
+func (r *SQLReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error) {
+	cacheKey := fmt.Sprintf("permissions:user:%s:bygroup", userID)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
 		return cached, nil
 	}
 
-	rows, err := r.q.GetPermissionsForUserByGroup(ctx, datagen.GetPermissionsForUserByGroupParams{
-		UserID: userID,
-		Group:  group,
-	})
+	rows, err := r.q.GetPermissionsForUserByGroup(ctx, userID)
 	if err != nil {
-		return nil, v1.ErrInternal(err, v1.M{"userID": userID, "group": group})
+		return nil, v1.ErrInternal(err, v1.M{"userID": userID})
 	}
 
 	var perms []Permission
 	for _, row := range rows {
-		perms = append(perms, fromUserPermRow(row.PermissionID, row.PermissionName, row.PermissionGroup, row.PermissionKind, row.Actions))
+		perms = append(perms, Permission{
+			Metadata:   Metadata,
+			Permission: row,
+		})
 	}
 
 	if r.cache != nil {
@@ -141,25 +135,24 @@ func (r *SQLReader) GetPermissionForUserByGrouo(ctx contexts.LContext, userID uu
 	return perms, nil
 }
 
-func (r *SQLReader) GetPermissionForUser(ctx contexts.LContext, userID uuid.UUID, kind, group string) ([]Permission, error) {
-	cacheKey := fmt.Sprintf("permissions:user:%s:group:%s:kind:%s", userID, group, kind)
+func (r *SQLReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error) {
+	cacheKey := fmt.Sprintf("permissions:user:%s", userID)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
 		return cached, nil
 	}
 
-	rows, err := r.q.GetPermissionsForUser(ctx, datagen.GetPermissionsForUserParams{
-		UserID: userID,
-		Group:  group,
-		Kind:   kind,
-	})
+	rows, err := r.q.GetPermissionsForUser(ctx, userID)
 	if err != nil {
-		return nil, v1.ErrInternal(err, v1.M{"userID": userID, "group": group, "kind": kind})
+		return nil, v1.ErrInternal(err, v1.M{"userID": userID})
 	}
 
 	var perms []Permission
 	for _, row := range rows {
-		perms = append(perms, fromUserPermRow(row.PermissionID, row.PermissionName, row.PermissionGroup, row.PermissionKind, row.Actions))
+		perms = append(perms, Permission{
+			Metadata:   Metadata,
+			Permission: row,
+		})
 	}
 
 	if r.cache != nil {
@@ -192,8 +185,6 @@ func (r *SQLReader) getCache(ctx contexts.LContext, keys ...string) []Permission
 }
 
 func (r *SQLReader) ClearCache(ctx context.Context) error {
-	// This is a simple implementation that clears all permissions-related cache keys.
-	// In a real implementation, you might want to be more selective or use a cache that supports key patterns.
 	r.cache.Clear(ctx)
 	return nil
 }

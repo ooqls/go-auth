@@ -6,12 +6,13 @@ import (
 	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/internal/permissionbindingsv1"
+	"github.com/ooqls/go-auth/internal/permissionsv1"
 	"github.com/ooqls/go-auth/internal/rolesv1"
 )
 
 type Service interface {
-	AssignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissionIds []uuid.UUID) error
-	UnassignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissionIds []uuid.UUID) error
+	AssignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissions []string) error
+	UnassignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissions []string) error
 	GetPermissionBindingsForRole(ctx *authorizationv1.Context, roleId uuid.UUID) ([]permissionbindingsv1.Permissionbindingv1, error)
 	GetPermissionsBindings(ctx *authorizationv1.Context, page, pageSize int) ([]permissionbindingsv1.Permissionbindingv1, error)
 }
@@ -20,6 +21,8 @@ type ServiceImpl struct {
 	auth authorizationv1.Authorizer
 	r    permissionbindingsv1.Reader
 	w    permissionbindingsv1.Writer
+	pr   permissionsv1.Reader
+	pw   permissionsv1.Writer
 }
 
 func NewServiceImpl(auth authorizationv1.Authorizer, factory datav1.Factory) *ServiceImpl {
@@ -27,22 +30,24 @@ func NewServiceImpl(auth authorizationv1.Authorizer, factory datav1.Factory) *Se
 		auth: auth,
 		r:    factory.NewPermissionBindingReader(),
 		w:    factory.NewPermissionBindingWriter(),
+		pr:   factory.NewPermissionReader(),
+		pw:   factory.NewPermissionWriter(),
 	}
 }
 
-func (s *ServiceImpl) AssignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissionIds []uuid.UUID) error {
+func (s *ServiceImpl) AssignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissions []string) error {
 	for _, roleId := range roleIds {
-		role := corev1.FromID(roleId, rolesv1.Metadata)
+		role := corev1.ToTargetString(rolesv1.Metadata)
 		if err := s.auth.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, role); err != nil {
 			return err
 		}
 
-		for _, permissionId := range permissionIds {
-			if err := s.auth.IsAuthorizedToAssignPermission(ctx, roleId, permissionId); err != nil {
+		for _, permission := range permissions {
+			if err := s.auth.IsAuthorizedToAssignPermission(ctx, roleId, permission); err != nil {
 				return err
 			}
 
-			if err := s.w.AssignPermission(ctx, roleId, permissionId); err != nil {
+			if err := s.w.AssignPermission(ctx, roleId, permission); err != nil {
 				return err
 			}
 		}
@@ -50,38 +55,22 @@ func (s *ServiceImpl) AssignPermission(ctx *authorizationv1.Context, roleIds []u
 	return nil
 }
 
-func (s *ServiceImpl) UnassignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissionIds []uuid.UUID) error {
+func (s *ServiceImpl) UnassignPermission(ctx *authorizationv1.Context, roleIds []uuid.UUID, permissions []string) error {
 	for _, roleId := range roleIds {
-		role := corev1.FromID(roleId, rolesv1.Metadata)
-		if err := s.auth.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, role); err != nil {
+		target := corev1.ToTargetString(rolesv1.Metadata)
+		if err := s.auth.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, target); err != nil {
 			return err
 		}
 
-		for _, permissionId := range permissionIds {
-			if err := s.auth.IsAuthorizedToUnassignPermission(ctx, roleId); err != nil {
+		for _, permission := range permissions {
+			if err := s.auth.IsAuthorizedToPerformAction(ctx, authorizationv1.UnassignAction, corev1.ToTargetString(permissionsv1.Metadata)); err != nil {
 				return err
 			}
 
-			if err := s.w.UnassignPermission(ctx, roleId, permissionId); err != nil {
+			if err := s.w.UnassignPermission(ctx, roleId, permission); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
-}
-
-func (s *ServiceImpl) GetPermissionBindingsForRole(ctx *authorizationv1.Context, roleId uuid.UUID) ([]permissionbindingsv1.Permissionbindingv1, error) {
-	if err := s.auth.IsAuthorizedToReadRolePermissions(ctx, roleId); err != nil {
-		return nil, err
-	}
-
-	return s.r.GetPermissionBindingsForRole(ctx, roleId)
-}
-
-func (s *ServiceImpl) GetPermissionsBindings(ctx *authorizationv1.Context, page, pageSize int) ([]permissionbindingsv1.Permissionbindingv1, error) {
-	if err := s.auth.IsAuthorizedToPerformGlobalAction(ctx, authorizationv1.ReadAction, permissionbindingsv1.Metadata); err != nil {
-		return nil, authorizationv1.ErrPermissionDenied
-	}
-
-	return s.r.GetPermissionsBindings(ctx, page, pageSize)
 }

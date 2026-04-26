@@ -10,7 +10,6 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
-	corev1 "github.com/ooqls/go-auth/internal/corev1"
 	resourcesv1 "github.com/ooqls/go-auth/internal/resourcesv1"
 )
 
@@ -52,18 +51,18 @@ func (mr *MockReaderMockRecorder) ClearCache(ctx interface{}) *gomock.Call {
 }
 
 // GetResource mocks base method.
-func (m *MockReader) GetResource(ctx context.Context, name string, object corev1.Metadata) (*resourcesv1.Resourcev1, error) {
+func (m *MockReader) GetResource(ctx context.Context, group, kind, name string) (*resourcesv1.Resourcev1, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResource", ctx, name, object)
+	ret := m.ctrl.Call(m, "GetResource", ctx, group, kind, name)
 	ret0, _ := ret[0].(*resourcesv1.Resourcev1)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetResource indicates an expected call of GetResource.
-func (mr *MockReaderMockRecorder) GetResource(ctx, name, object interface{}) *gomock.Call {
+func (mr *MockReaderMockRecorder) GetResource(ctx, group, kind, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResource", reflect.TypeOf((*MockReader)(nil).GetResource), ctx, name, object)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResource", reflect.TypeOf((*MockReader)(nil).GetResource), ctx, group, kind, name)
 }
 
 // GetResourceByID mocks base method.
@@ -82,16 +81,46 @@ func (mr *MockReaderMockRecorder) GetResourceByID(ctx, id interface{}) *gomock.C
 }
 
 // GetResources mocks base method.
-func (m *MockReader) GetResources(ctx context.Context, object corev1.Metadata, limit, offset int32) ([]resourcesv1.Resourcev1, error) {
+func (m *MockReader) GetResources(ctx context.Context, limit, offset int32) ([]resourcesv1.Resourcev1, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetResources", ctx, object, limit, offset)
+	ret := m.ctrl.Call(m, "GetResources", ctx, limit, offset)
 	ret0, _ := ret[0].([]resourcesv1.Resourcev1)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetResources indicates an expected call of GetResources.
-func (mr *MockReaderMockRecorder) GetResources(ctx, object, limit, offset interface{}) *gomock.Call {
+func (mr *MockReaderMockRecorder) GetResources(ctx, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResources", reflect.TypeOf((*MockReader)(nil).GetResources), ctx, object, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResources", reflect.TypeOf((*MockReader)(nil).GetResources), ctx, limit, offset)
+}
+
+// GetResourcesByGroup mocks base method.
+func (m *MockReader) GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) ([]resourcesv1.Resourcev1, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourcesByGroup", ctx, group, limit, offset)
+	ret0, _ := ret[0].([]resourcesv1.Resourcev1)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResourcesByGroup indicates an expected call of GetResourcesByGroup.
+func (mr *MockReaderMockRecorder) GetResourcesByGroup(ctx, group, limit, offset interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourcesByGroup", reflect.TypeOf((*MockReader)(nil).GetResourcesByGroup), ctx, group, limit, offset)
+}
+
+// GetResourcesByGroupAndKind mocks base method.
+func (m *MockReader) GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) ([]resourcesv1.Resourcev1, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourcesByGroupAndKind", ctx, group, kind, limit, offset)
+	ret0, _ := ret[0].([]resourcesv1.Resourcev1)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResourcesByGroupAndKind indicates an expected call of GetResourcesByGroupAndKind.
+func (mr *MockReaderMockRecorder) GetResourcesByGroupAndKind(ctx, group, kind, limit, offset interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourcesByGroupAndKind", reflect.TypeOf((*MockReader)(nil).GetResourcesByGroupAndKind), ctx, group, kind, limit, offset)
 }

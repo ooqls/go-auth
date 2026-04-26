@@ -1,6 +1,6 @@
 image:
   repository: samrreynolds4/base
-  tag: latest
+  tag: main
   pullPolicy: IfNotPresent
 
 # Enable/disable individual API deployments
@@ -43,6 +43,12 @@ valkey:
     enabled: true
     password: ""    # required
   enabled: true     # controls bitnami/valkey subchart
+  primary:
+    nodeSelector:
+      kubernetes.io/hostname: blue
+  replica:
+    nodeSelector:
+      kubernetes.io/hostname: blue
 
 # TLS for the API servers
 tls:
@@ -83,6 +89,13 @@ postgresql:
     username: goauth
     password: ""    # set this — must match postgres.auth.password above
     database: goauth
+  primary:
+    nodeSelector:
+      kubernetes.io/hostname: blue
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: "zfs-local"
 
 
 service:

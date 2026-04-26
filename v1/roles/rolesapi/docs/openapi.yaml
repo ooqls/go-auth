@@ -27,25 +27,6 @@ components:
           type: string
         hierarchy:
           type: integer
-    CreatePermissionRequest:
-      type: object
-      required:
-      - name
-      - description
-      properties:
-        permissions:
-          type: array
-          items:
-            $ref: "schemas.yaml#/components/schemas/Permission" 
-    DeletePermissionRequest:
-      type: object
-      required:
-      - permissions
-      properties:
-        permissions:
-          type: array
-          items:
-            $ref: "schemas.yaml#/components/schemas/Permission"
     CreateRoleResponse:
       type: object
       required:
@@ -58,8 +39,6 @@ components:
       type: object
       required:
       - id
-      - name
-      - description
       properties:
         id:
           type: string
@@ -68,32 +47,28 @@ components:
           type: string
         description:
           type: string
+        hierarchy:
+          type: integer
     AssignPermissionRequest:
       type: object
       properties:
-        role_ids:
+        role_id:
+          type: string
+          format: uuid
+        permissions:
           type: array
           items:
             type: string
-            format: uuid
-        permission_ids:
-          type: array
-          items:
-            type: string
-            format: uuid
     UnassignPermissionRequest:
       type: object
       properties:
-        role_ids:
+        role_id:
+            type: string
+            format: uuid
+        permissions:
           type: array
           items:
             type: string
-            format: uuid
-        permission_ids:
-          type: array
-          items:
-            type: string
-            format: uuid
 paths:
   /auth/roles:
     get:
@@ -170,7 +145,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "schemas.yaml#/components/schemas/UpdateRequest"
+              $ref: "#/components/schemas/UpdateRoleRequest"
       responses:
         '200':
           description: Successful role update
@@ -229,49 +204,5 @@ paths:
             application/json:
               schema:
                 $ref: "schemas.yaml#/components/schemas/Role"
-        '401':
-          description: Invalid credentials
-  /auth/permissions:
-    get:
-      operationId: getAuthPermissions
-      parameters:
-        - name: page
-          in: query
-          description: The page number
-          required: false
-          schema:
-            type: integer
-        - name: page_size
-          in: query
-          description: The page size
-          required: false
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Successful permission retrieval
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "schemas.yaml#/components/schemas/Permission"
-        '401':
-          description: Invalid credentials
-    post:
-      operationId: createAuthPermission
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreatePermissionRequest"
-        required: true
-      responses:
-        '200':
-          description: Successful permission creation
-          content:
-            application/json:
-              schema:
-                $ref: "schemas.yaml#/components/schemas/Permission"
         '401':
           description: Invalid credentials

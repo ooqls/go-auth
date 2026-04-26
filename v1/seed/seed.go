@@ -72,11 +72,7 @@ func (s *ServiceImpl) Seed(ctx *authorizationv1.Context, seed Seed) error {
 		}
 
 		for _, role := range user.Roles {
-			roleId, err := s.rolesService.CreateRole(ctx, roles.CreateRoleParams{
-				Name:        role.Name,
-				Description: role.Description,
-				Hierarchy:   role.Hierarchy,
-			})
+			roleId, err := s.rolesService.CreateRole(ctx, role.Name, role.Description, role.Hierarchy)
 			if err != nil {
 				return fmt.Errorf("failed to create role: %w", err)
 			}

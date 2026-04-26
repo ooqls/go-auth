@@ -12,31 +12,29 @@ import (
 )
 
 const assignPermission = `-- name: AssignPermission :exec
-INSERT INTO permissionbindingsv1 (
-    role_id,
-    permission_id,
-    created_at,
-    updated_at
-) VALUES (
-    $1,
-    $2,
-    now(),
-    now()
+WITH upserted_permission AS (
+  INSERT INTO permissionsv1 (permission)
+  VALUES ($1)
+  ON CONFLICT (permission) DO UPDATE
+    SET permission = EXCLUDED.permission
 )
+INSERT INTO permissionbindingsv1 (role_id, permission)
+VALUES ($2, $1)
+ON CONFLICT (role_id, permission) DO NOTHING
 `
 
 type AssignPermissionParams struct {
-	RoleID       uuid.UUID
-	PermissionID uuid.UUID
+	Permission string
+	RoleID     uuid.UUID
 }
 
 func (q *Queries) AssignPermission(ctx context.Context, arg AssignPermissionParams) error {
-	_, err := q.db.Exec(ctx, assignPermission, arg.RoleID, arg.PermissionID)
+	_, err := q.db.Exec(ctx, assignPermission, arg.Permission, arg.RoleID)
 	return err
 }
 
 const getPermissions = `-- name: GetPermissions :many
-SELECT role_id, permission_id, created_at, updated_at FROM permissionbindingsv1 LIMIT $1 OFFSET $2
+SELECT role_id, permission FROM permissionbindingsv1 LIMIT $1 OFFSET $2
 `
 
 type GetPermissionsParams struct {
@@ -53,12 +51,7 @@ func (q *Queries) GetPermissions(ctx context.Context, arg GetPermissionsParams) 
 	var items []Permissionbindingsv1
 	for rows.Next() {
 		var i Permissionbindingsv1
-		if err := rows.Scan(
-			&i.RoleID,
-			&i.PermissionID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
+		if err := rows.Scan(&i.RoleID, &i.Permission); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -70,7 +63,7 @@ func (q *Queries) GetPermissions(ctx context.Context, arg GetPermissionsParams) 
 }
 
 const getPermissionsForRole = `-- name: GetPermissionsForRole :many
-SELECT role_id, permission_id, created_at, updated_at FROM permissionbindingsv1 WHERE role_id = $1
+SELECT role_id, permission FROM permissionbindingsv1 WHERE role_id = $1
 `
 
 func (q *Queries) GetPermissionsForRole(ctx context.Context, roleID uuid.UUID) ([]Permissionbindingsv1, error) {
@@ -82,12 +75,7 @@ func (q *Queries) GetPermissionsForRole(ctx context.Context, roleID uuid.UUID) (
 	var items []Permissionbindingsv1
 	for rows.Next() {
 		var i Permissionbindingsv1
-		if err := rows.Scan(
-			&i.RoleID,
-			&i.PermissionID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
+		if err := rows.Scan(&i.RoleID, &i.Permission); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -108,24 +96,24 @@ func (q *Queries) UnassignAllPermissions(ctx context.Context, roleID uuid.UUID) 
 }
 
 const unassignFromAllRoles = `-- name: UnassignFromAllRoles :exec
-DELETE FROM permissionbindingsv1 WHERE permission_id = $1
+DELETE FROM permissionbindingsv1 WHERE permission = $1
 `
 
-func (q *Queries) UnassignFromAllRoles(ctx context.Context, permissionID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, unassignFromAllRoles, permissionID)
+func (q *Queries) UnassignFromAllRoles(ctx context.Context, permission string) error {
+	_, err := q.db.Exec(ctx, unassignFromAllRoles, permission)
 	return err
 }
 
 const unassignPermission = `-- name: UnassignPermission :exec
-DELETE FROM permissionbindingsv1 WHERE permission_id = $1 AND role_id = $2
+DELETE FROM permissionbindingsv1 WHERE permission = $1 AND role_id = $2
 `
 
 type UnassignPermissionParams struct {
-	PermissionID uuid.UUID
-	RoleID       uuid.UUID
+	Permission string
+	RoleID     uuid.UUID
 }
 
 func (q *Queries) UnassignPermission(ctx context.Context, arg UnassignPermissionParams) error {
-	_, err := q.db.Exec(ctx, unassignPermission, arg.PermissionID, arg.RoleID)
+	_, err := q.db.Exec(ctx, unassignPermission, arg.Permission, arg.RoleID)
 	return err
 }

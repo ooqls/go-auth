@@ -5,9 +5,11 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	permissionsv1 "github.com/ooqls/go-auth/internal/permissionsv1"
 )
 
 // MockWriter is a mock of Writer interface.
@@ -34,29 +36,30 @@ func (m *MockWriter) EXPECT() *MockWriterMockRecorder {
 }
 
 // CreatePermission mocks base method.
-func (m *MockWriter) CreatePermission(name, group, kind string, actions []string) error {
+func (m *MockWriter) CreatePermission(ctx context.Context, permission string) (*permissionsv1.Permission, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreatePermission", name, group, kind, actions)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "CreatePermission", ctx, permission)
+	ret0, _ := ret[0].(*permissionsv1.Permission)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreatePermission indicates an expected call of CreatePermission.
-func (mr *MockWriterMockRecorder) CreatePermission(name, group, kind, actions interface{}) *gomock.Call {
+func (mr *MockWriterMockRecorder) CreatePermission(ctx, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePermission", reflect.TypeOf((*MockWriter)(nil).CreatePermission), name, group, kind, actions)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePermission", reflect.TypeOf((*MockWriter)(nil).CreatePermission), ctx, permission)
 }
 
 // DeletePermission mocks base method.
-func (m *MockWriter) DeletePermission(name, group, kind string) error {
+func (m *MockWriter) DeletePermission(ctx context.Context, permission string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeletePermission", name, group, kind)
+	ret := m.ctrl.Call(m, "DeletePermission", ctx, permission)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeletePermission indicates an expected call of DeletePermission.
-func (mr *MockWriterMockRecorder) DeletePermission(name, group, kind interface{}) *gomock.Call {
+func (mr *MockWriterMockRecorder) DeletePermission(ctx, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePermission", reflect.TypeOf((*MockWriter)(nil).DeletePermission), name, group, kind)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePermission", reflect.TypeOf((*MockWriter)(nil).DeletePermission), ctx, permission)
 }

@@ -39,33 +39,21 @@ SELECT
   r.description AS description,
   r.created_at  AS role_created_at,
   r.updated_at  AS role_updated_at,
-  p.id          AS permission_id,
-  p.name        AS permission_name,
-  p."group"     AS permission_group,
-  p.kind        AS permission_kind,
-  p.actions     AS actions,
-  p.created_at  AS permission_created_at,
-  p.updated_at  AS permission_updated_at
+  p.permission     AS permission
 FROM rolesv1 r
 INNER JOIN permissionbindingsv1 pb ON r.id = pb.role_id
-INNER JOIN permissionsv1 p ON pb.permission_id = p.id
+INNER JOIN permissionsv1 p ON pb.permission = p.permission
 WHERE r.id = $1
 `
 
 type GetRoleAggregateRow struct {
-	RoleID              uuid.UUID
-	RoleName            string
-	Hierarchy           int32
-	Description         string
-	RoleCreatedAt       pgtype.Timestamptz
-	RoleUpdatedAt       pgtype.Timestamptz
-	PermissionID        uuid.UUID
-	PermissionName      string
-	PermissionGroup     string
-	PermissionKind      string
-	Actions             string
-	PermissionCreatedAt pgtype.Timestamptz
-	PermissionUpdatedAt pgtype.Timestamptz
+	RoleID        uuid.UUID
+	RoleName      string
+	Hierarchy     int32
+	Description   string
+	RoleCreatedAt pgtype.Timestamptz
+	RoleUpdatedAt pgtype.Timestamptz
+	Permission    string
 }
 
 func (q *Queries) GetRoleAggregate(ctx context.Context, id uuid.UUID) ([]GetRoleAggregateRow, error) {
@@ -84,13 +72,7 @@ func (q *Queries) GetRoleAggregate(ctx context.Context, id uuid.UUID) ([]GetRole
 			&i.Description,
 			&i.RoleCreatedAt,
 			&i.RoleUpdatedAt,
-			&i.PermissionID,
-			&i.PermissionName,
-			&i.PermissionGroup,
-			&i.PermissionKind,
-			&i.Actions,
-			&i.PermissionCreatedAt,
-			&i.PermissionUpdatedAt,
+			&i.Permission,
 		); err != nil {
 			return nil, err
 		}
@@ -115,40 +97,28 @@ SELECT
   r.description AS role_description,
   r.created_at  AS role_created_at,
   r.updated_at  AS role_updated_at,
-  p.id          AS permission_id,
-  p.name        AS permission_name,
-  p."group"     AS permission_group,
-  p.kind        AS permission_kind,
-  p.actions     AS actions,
-  p.created_at  AS permission_created_at,
-  p.updated_at  AS permission_updated_at
+  p.permission     AS permission
 FROM usersv1 u
 LEFT JOIN rolebindingsv1 rb ON u.id = rb.user_id
 LEFT JOIN rolesv1 r ON rb.role_id = r.id
 LEFT JOIN permissionbindingsv1 pb ON r.id = pb.role_id
-LEFT JOIN permissionsv1 p ON pb.permission_id = p.id
+LEFT JOIN permissionsv1 p ON pb.permission = p.permission
 WHERE u.id = $1
 `
 
 type GetUserAggregateRow struct {
-	UserID              uuid.UUID
-	Username            string
-	Email               string
-	UserCreatedAt       pgtype.Timestamptz
-	UserUpdatedAt       pgtype.Timestamptz
-	RoleID              pgtype.UUID
-	RoleName            pgtype.Text
-	Hierarchy           pgtype.Int4
-	RoleDescription     pgtype.Text
-	RoleCreatedAt       pgtype.Timestamptz
-	RoleUpdatedAt       pgtype.Timestamptz
-	PermissionID        pgtype.UUID
-	PermissionName      pgtype.Text
-	PermissionGroup     pgtype.Text
-	PermissionKind      pgtype.Text
-	Actions             pgtype.Text
-	PermissionCreatedAt pgtype.Timestamptz
-	PermissionUpdatedAt pgtype.Timestamptz
+	UserID          uuid.UUID
+	Username        string
+	Email           string
+	UserCreatedAt   pgtype.Timestamptz
+	UserUpdatedAt   pgtype.Timestamptz
+	RoleID          pgtype.UUID
+	RoleName        pgtype.Text
+	Hierarchy       pgtype.Int4
+	RoleDescription pgtype.Text
+	RoleCreatedAt   pgtype.Timestamptz
+	RoleUpdatedAt   pgtype.Timestamptz
+	Permission      pgtype.Text
 }
 
 func (q *Queries) GetUserAggregate(ctx context.Context, id uuid.UUID) ([]GetUserAggregateRow, error) {
@@ -172,13 +142,7 @@ func (q *Queries) GetUserAggregate(ctx context.Context, id uuid.UUID) ([]GetUser
 			&i.RoleDescription,
 			&i.RoleCreatedAt,
 			&i.RoleUpdatedAt,
-			&i.PermissionID,
-			&i.PermissionName,
-			&i.PermissionGroup,
-			&i.PermissionKind,
-			&i.Actions,
-			&i.PermissionCreatedAt,
-			&i.PermissionUpdatedAt,
+			&i.Permission,
 		); err != nil {
 			return nil, err
 		}

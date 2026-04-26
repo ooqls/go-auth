@@ -5,23 +5,21 @@ SELECT * FROM permissionbindingsv1 WHERE role_id = $1;
 SELECT * FROM permissionbindingsv1 LIMIT $1 OFFSET $2;
 
 -- name: AssignPermission :exec
-INSERT INTO permissionbindingsv1 (
-    role_id,
-    permission_id,
-    created_at,
-    updated_at
-) VALUES (
-    $1,
-    $2,
-    now(),
-    now()
-);
+WITH upserted_permission AS (
+  INSERT INTO permissionsv1 (permission)
+  VALUES ($1)
+  ON CONFLICT (permission) DO UPDATE
+    SET permission = EXCLUDED.permission
+)
+INSERT INTO permissionbindingsv1 (role_id, permission)
+VALUES ($2, $1)
+ON CONFLICT (role_id, permission) DO NOTHING;
 
 -- name: UnassignPermission :exec
-DELETE FROM permissionbindingsv1 WHERE permission_id = $1 AND role_id = $2;
+DELETE FROM permissionbindingsv1 WHERE permission = $1 AND role_id = $2;
 
 -- name: UnassignAllPermissions :exec
 DELETE FROM permissionbindingsv1 WHERE role_id = $1;
 
 -- name: UnassignFromAllRoles :exec
-DELETE FROM permissionbindingsv1 WHERE permission_id = $1;
+DELETE FROM permissionbindingsv1 WHERE permission = $1;

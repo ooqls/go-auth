@@ -52,48 +52,18 @@ func (mr *MockReaderMockRecorder) ClearCache(ctx interface{}) *gomock.Call {
 }
 
 // GetPermission mocks base method.
-func (m *MockReader) GetPermission(ctx contexts.LContext, name, group, kind string) (*permissionsv1.Permission, error) {
+func (m *MockReader) GetPermission(ctx contexts.LContext, permission string) (*permissionsv1.Permission, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPermission", ctx, name, group, kind)
+	ret := m.ctrl.Call(m, "GetPermission", ctx, permission)
 	ret0, _ := ret[0].(*permissionsv1.Permission)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPermission indicates an expected call of GetPermission.
-func (mr *MockReaderMockRecorder) GetPermission(ctx, name, group, kind interface{}) *gomock.Call {
+func (mr *MockReaderMockRecorder) GetPermission(ctx, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermission", reflect.TypeOf((*MockReader)(nil).GetPermission), ctx, name, group, kind)
-}
-
-// GetPermissionForUser mocks base method.
-func (m *MockReader) GetPermissionForUser(ctx contexts.LContext, userID uuid.UUID, kind, group string) ([]permissionsv1.Permission, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPermissionForUser", ctx, userID, kind, group)
-	ret0, _ := ret[0].([]permissionsv1.Permission)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPermissionForUser indicates an expected call of GetPermissionForUser.
-func (mr *MockReaderMockRecorder) GetPermissionForUser(ctx, userID, kind, group interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissionForUser", reflect.TypeOf((*MockReader)(nil).GetPermissionForUser), ctx, userID, kind, group)
-}
-
-// GetPermissionForUserByGrouo mocks base method.
-func (m *MockReader) GetPermissionForUserByGrouo(ctx contexts.LContext, userID uuid.UUID, group string) ([]permissionsv1.Permission, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPermissionForUserByGrouo", ctx, userID, group)
-	ret0, _ := ret[0].([]permissionsv1.Permission)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetPermissionForUserByGrouo indicates an expected call of GetPermissionForUserByGrouo.
-func (mr *MockReaderMockRecorder) GetPermissionForUserByGrouo(ctx, userID, group interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissionForUserByGrouo", reflect.TypeOf((*MockReader)(nil).GetPermissionForUserByGrouo), ctx, userID, group)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermission", reflect.TypeOf((*MockReader)(nil).GetPermission), ctx, permission)
 }
 
 // GetPermissions mocks base method.
@@ -111,17 +81,47 @@ func (mr *MockReaderMockRecorder) GetPermissions(ctx, page, pageSize interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissions", reflect.TypeOf((*MockReader)(nil).GetPermissions), ctx, page, pageSize)
 }
 
-// HasPermission mocks base method.
-func (m *MockReader) HasPermission(ctx contexts.LContext, userID uuid.UUID, name, group, kind, actions string) (bool, error) {
+// GetPermissionsForUser mocks base method.
+func (m *MockReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) ([]permissionsv1.Permission, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HasPermission", ctx, userID, name, group, kind, actions)
+	ret := m.ctrl.Call(m, "GetPermissionsForUser", ctx, userID)
+	ret0, _ := ret[0].([]permissionsv1.Permission)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPermissionsForUser indicates an expected call of GetPermissionsForUser.
+func (mr *MockReaderMockRecorder) GetPermissionsForUser(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissionsForUser", reflect.TypeOf((*MockReader)(nil).GetPermissionsForUser), ctx, userID)
+}
+
+// GetPermissionsForUserByGroup mocks base method.
+func (m *MockReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) ([]permissionsv1.Permission, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPermissionsForUserByGroup", ctx, userID)
+	ret0, _ := ret[0].([]permissionsv1.Permission)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPermissionsForUserByGroup indicates an expected call of GetPermissionsForUserByGroup.
+func (mr *MockReaderMockRecorder) GetPermissionsForUserByGroup(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissionsForUserByGroup", reflect.TypeOf((*MockReader)(nil).GetPermissionsForUserByGroup), ctx, userID)
+}
+
+// HasPermission mocks base method.
+func (m *MockReader) HasPermission(ctx contexts.LContext, userID uuid.UUID, permission string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasPermission", ctx, userID, permission)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // HasPermission indicates an expected call of HasPermission.
-func (mr *MockReaderMockRecorder) HasPermission(ctx, userID, name, group, kind, actions interface{}) *gomock.Call {
+func (mr *MockReaderMockRecorder) HasPermission(ctx, userID, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasPermission", reflect.TypeOf((*MockReader)(nil).HasPermission), ctx, userID, name, group, kind, actions)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasPermission", reflect.TypeOf((*MockReader)(nil).HasPermission), ctx, userID, permission)
 }

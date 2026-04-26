@@ -2,7 +2,6 @@ package permissionsv1
 
 import (
 	"context"
-	"strings"
 
 	"github.com/ooqls/go-auth/internal/permissionsv1/datagen"
 	v1 "github.com/ooqls/go-auth/v1"
@@ -12,8 +11,8 @@ var _ Writer = &SQLWriter{}
 
 //go:generate go run github.com/golang/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks
 type Writer interface {
-	CreatePermission(name, group, kind string, actions []string) error
-	DeletePermission(name, group, kind string) error
+	CreatePermission(ctx context.Context, permission string) (*Permission, error)
+	DeletePermission(ctx context.Context, permission string) error
 }
 
 func NewSQLWriter(q *datagen.Queries) *SQLWriter {
@@ -24,27 +23,26 @@ type SQLWriter struct {
 	q *datagen.Queries
 }
 
-func (w *SQLWriter) CreatePermission(name, group, kind string, actions []string) error {
-	_, err := w.q.CreatePermission(context.Background(), datagen.CreatePermissionParams{
-		Name:    name,
-		Group:   group,
-		Kind:    kind,
-		Actions: strings.Join(actions, ","),
-	})
+func (w *SQLWriter) CreatePermission(ctx context.Context, permission string) (*Permission, error) {
+	row, err := w.q.CreatePermission(ctx, permission)
 	if err != nil {
-		return v1.ErrInternal(err, v1.M{"name": name, "group": group, "kind": kind})
+		return nil, v1.ErrInternal(err, v1.M{"permission": permission})
 	}
-	return nil
+	return fromDatagenPermission(row), nil
 }
 
-func (w *SQLWriter) DeletePermission(name, group, kind string) error {
-	err := w.q.DeletePermission(context.Background(), datagen.DeletePermissionParams{
-		Name:  name,
-		Group: group,
-		Kind:  kind,
-	})
+func (w *SQLWriter) GetOrCreatePermission(ctx context.Context, permission string) (*Permission, error) {
+	row, err := w.q.GetOrCreatePermission(ctx, permission)
 	if err != nil {
-		return v1.ErrInternal(err, v1.M{"name": name, "group": group, "kind": kind})
+		return nil, v1.ErrInternal(err, v1.M{"permission": permission})
+	}
+	return fromDatagenPermission(row), nil
+}
+
+func (w *SQLWriter) DeletePermission(ctx context.Context, permission string) error {
+	err := w.q.DeletePermission(ctx, permission)
+	if err != nil {
+		return v1.ErrInternal(err, v1.M{"permission": permission})
 	}
 	return nil
 }

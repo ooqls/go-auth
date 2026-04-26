@@ -11,6 +11,9 @@ services:
       - roles
       - users
   resources:
+    build:
+      context: ../..
+      dockerfile: dockerfiles/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "resources", "--app-config", "/config/config/config.yaml"]
@@ -22,6 +25,9 @@ services:
       - valkey
       - seed
   permissions:
+    build:
+      context: ../..
+      dockerfile: dockerfiles/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "permissions", "--app-config", "/config/config/config.yaml"]
@@ -33,6 +39,9 @@ services:
       - valkey
       - seed
   roles:
+    build:
+      context: ../..
+      dockerfile: dockerfiles/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "roles", "--app-config", "/config/config/config.yaml"]
@@ -44,6 +53,9 @@ services:
       - valkey
       - seed
   auth:
+    build:
+      context: ../..
+      dockerfile: dockerfiles/base.dockerfile
     image: samrreynolds4/auth:main
     restart: unless-stopped
     command: ["/app/main", "--api", "authentication", "--app-config", "/config/config/config.yaml"]
@@ -55,6 +67,9 @@ services:
       - valkey
       - seed
   users:
+    build:
+      context: ../..
+      dockerfile: dockerfiles/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "users", "--app-config", "/config/config/config.yaml"]
@@ -66,9 +81,12 @@ services:
       - valkey
       - seed
   seed:
-    image: samrreynolds4/seed:main
+    build:
+      context: ../..
+      dockerfile: dockerfiles/base.dockerfile
+    image: samrreynolds4/base:main
     restart: "no"
-    command: ["/app/main", "--api", "seed", "--app-config", "/config/config/seed.yaml"]
+    command: ["/app/main", "--api", "seed", "--app-config", "/config/config/config.yaml"]
     volumes:
       - ./app:/config
       - ./migrations:/migrations

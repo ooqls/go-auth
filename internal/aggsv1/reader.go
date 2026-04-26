@@ -78,21 +78,8 @@ func (r *SQLReader) GetRoleAgg(ctx context.Context, roleID uuid.UUID) (*RoleAgg,
 
 	for _, row := range rows {
 		perm := permissionsv1.Permission{
-			Object: corev1.Object{
-				Metadata:  permissionsv1.Metadata,
-				Id:        row.PermissionID,
-				Name:      row.PermissionName,
-				CreatedAt: row.PermissionCreatedAt.Time,
-				UpdatedAt: row.PermissionUpdatedAt.Time,
-			},
-			Resource: corev1.Object{
-				Metadata: corev1.Metadata{
-					Group: row.PermissionGroup,
-					Kind:  row.PermissionKind,
-				},
-				Name: row.PermissionName,
-			},
-			Actions: row.Actions,
+			Metadata:   permissionsv1.Metadata,
+			Permission: row.Permission,
 		}
 		agg.Permissions = append(agg.Permissions, perm)
 	}
@@ -168,26 +155,9 @@ func (r *SQLReader) GetUserAgg(ctx context.Context, userID uuid.UUID) (*UserAgg,
 			roleOrder = append(roleOrder, roleID)
 		}
 
-		if !row.PermissionID.Valid {
-			continue
-		}
-
 		perm := permissionsv1.Permission{
-			Object: corev1.Object{
-				Metadata:  permissionsv1.Metadata,
-				Id:        uuid.UUID(row.PermissionID.Bytes),
-				Name:      row.PermissionName.String,
-				CreatedAt: row.PermissionCreatedAt.Time,
-				UpdatedAt: row.PermissionUpdatedAt.Time,
-			},
-			Resource: corev1.Object{
-				Metadata: corev1.Metadata{
-					Group: row.PermissionGroup.String,
-					Kind:  row.PermissionKind.String,
-				},
-				Name: row.PermissionName.String,
-			},
-			Actions: row.Actions.String,
+			Metadata:   permissionsv1.Metadata,
+			Permission: row.Permission.String,
 		}
 		role.Permissions = append(role.Permissions, perm)
 	}

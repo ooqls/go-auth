@@ -11,23 +11,24 @@ import (
 	"github.com/google/uuid"
 	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/getset/log"
-	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/resourcesv1/datagen"
 	"go.uber.org/zap"
 )
 
-func getCacheKey(name string, metadata corev1.Metadata) string {
-	return fmt.Sprintf("%s-%s-%s", name, metadata.Group, metadata.Kind)
+func getCacheKey(name string) string {
+	return fmt.Sprintf("resource-%s", name)
 }
 
-func getPaginatedKey(metadata corev1.Metadata, offset, limit int32) string {
-	return fmt.Sprintf("page-%s-%s-%d-%d", metadata.Group, metadata.Kind, limit, offset)
+func getPaginatedKey(limit, offset int32) string {
+	return fmt.Sprintf("resource-page-%d-%d", limit, offset)
 }
 
 type Reader interface {
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourcev1, error)
-	GetResource(ctx context.Context, name string, object corev1.Metadata) (*Resourcev1, error)
-	GetResources(ctx context.Context, object corev1.Metadata, limit, offset int32) ([]Resourcev1, error)
+	GetResource(ctx context.Context, group, kind, name string) (*Resourcev1, error)
+	GetResources(ctx context.Context, limit, offset int32) ([]Resourcev1, error)
+	GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) ([]Resourcev1, error)
+	GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) ([]Resourcev1, error)
 	ClearCache(ctx context.Context) error
 }
 
@@ -43,48 +44,31 @@ func NewSQLReader(c *cache.GenericCache, queries *datagen.Queries) Reader {
 		q: queries,
 		c: c,
 	}
-
 }
 
-func (r *SQLReader) GetResource(ctx context.Context, name string, obj corev1.Metadata) (*Resourcev1, error) {
-	cacheKey := getCacheKey(name, obj)
+func (r *SQLReader) GetResource(ctx context.Context, group, kind, name string) (*Resourcev1, error) {
+	cacheKey := getCacheKey(name)
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
 		return &cached[0], nil
 	}
 
-	res, err := r.q.GetResourceByName(ctx, datagen.GetResourceByNameParams{
-		ResourceName:  name,
-		ResourceGroup: obj.Group,
-		ResourceKind:  obj.Kind,
-	})
+	res, err := r.q.GetResourceByName(ctx, name)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
-
 		return nil, fmt.Errorf("failed to get resource from database: %v", err)
 	}
 
-	resObj := &Resourcev1{
-		Object: corev1.Object{
-			Metadata: corev1.Metadata{
-				Group: res.ResourceGroup,
-				Kind:  res.ResourceKind,
-			},
-			Name: res.ResourceName,
-		},
-		Description: res.Description,
-		CreatedAt:   res.CreatedAt.Time,
-		UpdatedAt:   res.UpdatedAt.Time,
-	}
+	resObj := fromDatagenResource(res)
 
 	r.setCache(ctx, cacheKey, *resObj)
 	return resObj, nil
 }
 
 func (r *SQLReader) GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourcev1, error) {
-	cacheKey := getCacheKey(id.String(), Metadata)
-	if cached := r.getCache(ctx, id.String()); cached != nil {
+	cacheKey := getCacheKey(id.String())
+	if cached := r.getCache(ctx, cacheKey); cached != nil {
 		return &cached[0], nil
 	}
 
@@ -93,62 +77,37 @@ func (r *SQLReader) GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourc
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
-
 		return nil, fmt.Errorf("failed to get resource from database: %v", err)
 	}
 
-	resObj := &Resourcev1{
-		Object: corev1.Object{
-			Metadata: corev1.Metadata{
-				Group: res.ResourceGroup,
-				Kind:  res.ResourceKind,
-			},
-			Name: res.ResourceName,
-		},
-		Description: res.Description,
-		CreatedAt:   res.CreatedAt.Time,
-		UpdatedAt:   res.UpdatedAt.Time,
-	}
+	resObj := fromDatagenResource(res)
 
 	r.setCache(ctx, cacheKey, *resObj)
 	return resObj, nil
 }
 
-func (r *SQLReader) GetResources(ctx context.Context, obj corev1.Metadata, limit, offset int32) ([]Resourcev1, error) {
-	cacheKey := getPaginatedKey(corev1.Metadata{Group: obj.Group, Kind: obj.Kind}, offset, limit)
-	res := r.getCache(ctx, cacheKey)
-	if res != nil {
+func (r *SQLReader) GetResources(ctx context.Context, limit, offset int32) ([]Resourcev1, error) {
+	cacheKey := getPaginatedKey(limit, offset)
+	if res := r.getCache(ctx, cacheKey); res != nil {
 		return res, nil
 	}
 
-	kind := obj.Kind
-	if kind == "" {
-		kind = "*"
-	}
 	qres, err := r.q.GetResources(ctx, datagen.GetResourcesParams{
-		ResourceGroup: obj.Group,
-		Column2:       kind,
-		Limit:         limit,
-		Offset:        offset,
+		Limit:  limit,
+		Offset: offset,
 	})
 	if err != nil {
 		r.l.Error("failed to list resources", zap.Error(err))
 		return nil, err
 	}
 
-	res = make([]Resourcev1, len(qres))
+	res := make([]Resourcev1, len(qres))
 	for i, obj := range qres {
 		res[i] = Resourcev1{
-			Object: corev1.Object{
-				Metadata: corev1.Metadata{
-					Group: obj.ResourceGroup,
-					Kind:  obj.ResourceKind,
-				},
-				Name: obj.ResourceName,
-			},
-			Description: obj.Description,
-			CreatedAt:   obj.CreatedAt.Time,
-			UpdatedAt:   obj.UpdatedAt.Time,
+			Id:        obj.ID,
+			Name:      obj.Name,
+			CreatedAt: obj.CreatedAt.Time,
+			UpdatedAt: obj.UpdatedAt.Time,
 		}
 	}
 
@@ -156,25 +115,66 @@ func (r *SQLReader) GetResources(ctx context.Context, obj corev1.Metadata, limit
 	return res, nil
 }
 
-// func (r *SQLReader) QueryResources(ctx context.Context, q Query) ([]records.Resource, error) {
-// 	rows, err := r.q.QueryResources(ctx, gen.QueryResourcesParams{
-// 		Column1: q.Name,
-// 		Column2: q.Group,
-// 		Column3: q.Kind,
-// 		Limit:   q.PageSize,
-// 		Offset:  q.Page * q.PageSize,
-// 	})
-// 	if err != nil {
-// 		if errors.Is(err, sql.ErrNoRows) {
-// 			return []records.Resource{}, nil
-// 		}
+func (r *SQLReader) GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) ([]Resourcev1, error) {
+	cacheKey := fmt.Sprintf("group-%s:%s", group, getPaginatedKey(limit, offset))
+	if res := r.getCache(ctx, cacheKey); res != nil {
+		return res, nil
+	}
 
-// 		return nil, fmt.Errorf("failed to query resources: %v", err)
-// 	}
+	qres, err := r.q.GetResourcesByGroup(ctx, datagen.GetResourcesByGroupParams{
+		Rgroup: group,
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		r.l.Error("failed to list resources by group", zap.String("group", group), zap.Error(err))
+		return nil, err
+	}
 
-// 	return rows, nil
-// }
+	res := make([]Resourcev1, len(qres))
+	for i, obj := range qres {
+		res[i] = Resourcev1{
+			Id:        obj.ID,
+			Name:      obj.Name,
+			CreatedAt: obj.CreatedAt.Time,
+			UpdatedAt: obj.UpdatedAt.Time,
+		}
+	}
 
+	r.setCache(ctx, cacheKey, res...)
+	return res, nil
+}
+
+func (r *SQLReader) GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) ([]Resourcev1, error) {
+	cacheKey := fmt.Sprintf("group-%s:kind-%s:%s", group, kind, getPaginatedKey(limit, offset))
+	if res := r.getCache(ctx, cacheKey); res != nil {
+		return res, nil
+	}
+
+	qres, err := r.q.GetResourcesByGroupAndKind(ctx, datagen.GetResourcesByGroupAndKindParams{
+		Rgroup: group,
+		Kind:   kind,
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		r.l.Error("failed to list resources by group and kind", zap.String("group", group), zap.String("kind", kind), zap.Error(err))
+		return nil, err
+	}
+
+	res := make([]Resourcev1, len(qres))
+	for i, obj := range qres {
+		res[i] = Resourcev1{
+			Id:        obj.ID,
+			Name:      obj.Name,
+			CreatedAt: obj.CreatedAt.Time,
+			UpdatedAt: obj.UpdatedAt.Time,
+		}
+	}
+
+	r.setCache(ctx, cacheKey, res...)
+	return res, nil
+}
 func (r *SQLReader) ClearCache(ctx context.Context) error {
 	err := r.c.Clear(ctx)
 	if err != nil {
@@ -199,7 +199,6 @@ func (r *SQLReader) getCache(ctx context.Context, key string) []Resourcev1 {
 	}
 
 	return resources
-
 }
 
 func (r *SQLReader) setCache(ctx context.Context, key string, resources ...Resourcev1) {

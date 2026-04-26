@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
-	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/internal/resourcesv1"
+	"github.com/ooqls/go-auth/v1/resources"
 	"github.com/ooqls/go-auth/v1/resources/resourcesapi/gen_resources"
 	"go.uber.org/zap"
 )
@@ -16,16 +16,14 @@ import (
 var _ gen_resources.ServerInterface = &ResourcesServer{}
 
 type ResourcesServer struct {
-	resourceReader resourcesv1.Reader
-	resourceWriter resourcesv1.Writer
-	l              *zap.Logger
+	service resources.Service
+	l       *zap.Logger
 }
 
 func NewResourcesServer(factory datav1.Factory, l *zap.Logger) *ResourcesServer {
 	return &ResourcesServer{
-		resourceReader: factory.NewResourceReader(),
-		resourceWriter: factory.NewResourceWriter(),
-		l:              l,
+		service: resources.NewServiceImpl(factory),
+		l:       l,
 	}
 }
 
@@ -36,7 +34,7 @@ func (r *ResourcesServer) DeleteResource(c *gin.Context, name string, group stri
 		return
 	}
 
-	err := r.resourceWriter.DeleteResource(c, group, kind, name)
+	err := r.service.DeleteResource(authCtx, group, kind, name)
 	if err != nil {
 		if errors.Is(err, resourcesv1.ErrNotFound) {
 			r.l.Error("resource not found", zap.Error(err))
@@ -61,10 +59,7 @@ func (r *ResourcesServer) GetResource(c *gin.Context, name string, group string,
 		return
 	}
 
-	res, err := r.resourceReader.GetResource(c, name, corev1.Metadata{
-		Group: group,
-		Kind:  kind,
-	})
+	res, err := r.service.GetResource(authCtx, group, kind, name)
 	if err != nil {
 		r.l.Error("failed to get resource", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
@@ -89,17 +84,9 @@ func (r *ResourcesServer) ListResources(c *gin.Context, params gen_resources.Lis
 		return
 	}
 
-	group := ""
-	kind := ""
 	page := int32(0)
 	pageSize := int32(100)
 
-	if params.Group != nil {
-		group = *params.Group
-	}
-	if params.Kind != nil {
-		kind = *params.Kind
-	}
 	if params.Page != nil {
 		page = int32(*params.Page)
 	}
@@ -107,10 +94,7 @@ func (r *ResourcesServer) ListResources(c *gin.Context, params gen_resources.Lis
 		pageSize = int32(*params.PageSize)
 	}
 
-	res, err := r.resourceReader.GetResources(c, corev1.Metadata{
-		Group: group,
-		Kind:  kind,
-	}, pageSize, page*pageSize)
+	res, err := r.service.GetResources(authCtx, params.Group, params.Kind, page, pageSize)
 	if err != nil {
 		r.l.Error("failed to get resources", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})

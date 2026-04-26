@@ -3,7 +3,7 @@ SHELL := /bin/bash
 
 IMAGE_REPOSITORY ?= "samrreynolds4/"
 DOCKERFILES ?= "./dockerfiles"
-IMAGE_TAG := $(shell git name-rev --name-only HEAD 2>/dev/null || echo "unknown")
+IMAGE_TAG := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null | sed 's|remotes/origin/||' || echo "unknown")
 IMAGE_TAG := $(shell git describe --tags --exact-match 2>/dev/null || echo $(IMAGE_TAG))
 
 build_all:

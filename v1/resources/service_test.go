@@ -30,11 +30,6 @@ func newAuthCtx(user usersv1.User) *authorizationv1.Context {
 	return &ctx
 }
 
-func newInternalCtx() *authorizationv1.Context {
-	ctx := authorizationv1.NewInternalOperationContext(nil)
-	return &ctx
-}
-
 func authAllowed(mock *authmocks.MockAuthorizer) {
 	mock.EXPECT().
 		IsAuthorizedToPerformAction(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -55,12 +50,9 @@ func sampleUser(name string) usersv1.User {
 
 func sampleResource(name, group, kind string) *resourcesv1.Resourcev1 {
 	return &resourcesv1.Resourcev1{
-		Object: corev1.Object{
-			Metadata: corev1.Metadata{Group: group, Kind: kind},
-			Id:       uuid.New(),
-			Name:     name,
-		},
-		Description: "test description",
+		Metadata: corev1.Metadata{Group: group, Kind: kind},
+		Id:       uuid.New(),
+		Name:     name,
 	}
 }
 
@@ -70,11 +62,7 @@ func assertForbidden(t *testing.T, err error) {
 	assert.ErrorAs(t, err, &target)
 }
 
-func assertNotFound(t *testing.T, err error) {
-	t.Helper()
-	var target *v1.NotFoundError
-	assert.ErrorAs(t, err, &target)
-}
+func strPtr(s string) *string { return &s }
 
 func TestCreateResource(t *testing.T) {
 	user := sampleUser("testuser")
@@ -88,10 +76,10 @@ func TestCreateResource(t *testing.T) {
 
 		res := sampleResource("myresource", "mygroup", "mykind")
 		authAllowed(ra)
-		rw.EXPECT().CreateResource(ctx, "mygroup", "mykind", "myresource", "desc").Return(res, nil)
+		rw.EXPECT().CreateResource(gomock.Any(), "mygroup", "mykind", "myresource").Return(res, nil)
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.CreateResource(ctx, "mygroup", "mykind", "myresource", "desc")
+		got, err := svc.CreateResource(ctx, "mygroup", "mykind", "myresource")
 		require.NoError(t, err)
 		assert.Equal(t, res, got)
 	})
@@ -105,9 +93,10 @@ func TestCreateResource(t *testing.T) {
 		authDenied(ra)
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.CreateResource(ctx, "mygroup", "mykind", "myresource", "desc")
+		got, err := svc.CreateResource(ctx, "mygroup", "mykind", "myresource")
 		require.Error(t, err)
 		assert.Nil(t, got)
+		assertForbidden(t, err)
 	})
 
 	t.Run("writer error propagates", func(t *testing.T) {
@@ -117,14 +106,12 @@ func TestCreateResource(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		authAllowed(ra)
-		writerErr := errors.New("db error")
-		rw.EXPECT().CreateResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, writerErr)
+		rw.EXPECT().CreateResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.CreateResource(ctx, "mygroup", "mykind", "myresource", "desc")
+		got, err := svc.CreateResource(ctx, "mygroup", "mykind", "myresource")
 		require.Error(t, err)
 		assert.Nil(t, got)
-		assert.True(t, errors.Is(err, writerErr))
 	})
 }
 
@@ -140,7 +127,7 @@ func TestGetResource(t *testing.T) {
 
 		res := sampleResource("myresource", "mygroup", "mykind")
 		authAllowed(ra)
-		rr.EXPECT().GetResource(ctx, "myresource", corev1.Metadata{Group: "mygroup", Kind: "mykind"}).Return(res, nil)
+		rr.EXPECT().GetResource(gomock.Any(), "mygroup", "mykind", "myresource").Return(res, nil)
 
 		svc := newTestService(rr, rw, ra)
 		got, err := svc.GetResource(ctx, "mygroup", "mykind", "myresource")
@@ -160,6 +147,7 @@ func TestGetResource(t *testing.T) {
 		got, err := svc.GetResource(ctx, "mygroup", "mykind", "myresource")
 		require.Error(t, err)
 		assert.Nil(t, got)
+		assertForbidden(t, err)
 	})
 
 	t.Run("reader error propagates", func(t *testing.T) {
@@ -169,23 +157,18 @@ func TestGetResource(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		authAllowed(ra)
-		readerErr := errors.New("db error")
-		rr.EXPECT().GetResource(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, readerErr)
+		rr.EXPECT().GetResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
 
 		svc := newTestService(rr, rw, ra)
 		got, err := svc.GetResource(ctx, "mygroup", "mykind", "myresource")
 		require.Error(t, err)
 		assert.Nil(t, got)
-		assert.True(t, errors.Is(err, readerErr))
 	})
 }
 
 func TestUpdateResourceName(t *testing.T) {
 	user := sampleUser("testuser")
 	ctx := newAuthCtx(user)
-	id := uuid.New()
-	newName := "newname"
-	newDesc := "new desc"
 
 	t.Run("authorized — updates resource", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -194,34 +177,17 @@ func TestUpdateResourceName(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		existing := sampleResource("oldname", "mygroup", "mykind")
-		existing.Id = id
-		updated := sampleResource(newName, "mygroup", "mykind")
-		updated.Id = id
+		updated := sampleResource("newname", "mygroup", "mykind")
 
-		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rr.EXPECT().GetResourceByID(ctx, id).Return(existing, nil)
 		authAllowed(ra)
-		rw.EXPECT().UpdateResource(ctx, id, &newName, &newDesc).Return(updated, nil)
+		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
+		rr.EXPECT().GetResource(gomock.Any(), "mygroup", "mykind", "oldname").Return(existing, nil)
+		rw.EXPECT().UpdateResource(gomock.Any(), "mygroup", "mykind", "oldname", "newname").Return(updated, nil)
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.UpdateResourceName(ctx, id, newName, &newDesc)
+		got, err := svc.UpdateResourceName(ctx, "mygroup", "mykind", "oldname", "newname")
 		require.NoError(t, err)
 		assert.Equal(t, updated, got)
-	})
-
-	t.Run("resource not found", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		rr := resmocks.NewMockReader(ctrl)
-		rw := resmocks.NewMockWriter(ctrl)
-		ra := authmocks.NewMockAuthorizer(ctrl)
-
-		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rr.EXPECT().GetResourceByID(ctx, id).Return(nil, nil)
-
-		svc := newTestService(rr, rw, ra)
-		got, err := svc.UpdateResourceName(ctx, id, newName, &newDesc)
-		require.Error(t, err)
-		assert.Nil(t, got)
 	})
 
 	t.Run("unauthorized", func(t *testing.T) {
@@ -230,15 +196,27 @@ func TestUpdateResourceName(t *testing.T) {
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		existing := sampleResource("oldname", "mygroup", "mykind")
-		existing.Id = id
-
-		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rr.EXPECT().GetResourceByID(ctx, id).Return(existing, nil)
 		authDenied(ra)
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.UpdateResourceName(ctx, id, newName, &newDesc)
+		got, err := svc.UpdateResourceName(ctx, "mygroup", "mykind", "oldname", "newname")
+		require.Error(t, err)
+		assert.Nil(t, got)
+		assertForbidden(t, err)
+	})
+
+	t.Run("resource not found", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		rr := resmocks.NewMockReader(ctrl)
+		rw := resmocks.NewMockWriter(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+
+		authAllowed(ra)
+		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
+		rr.EXPECT().GetResource(gomock.Any(), "mygroup", "mykind", "oldname").Return(nil, nil)
+
+		svc := newTestService(rr, rw, ra)
+		got, err := svc.UpdateResourceName(ctx, "mygroup", "mykind", "oldname", "newname")
 		require.Error(t, err)
 		assert.Nil(t, got)
 	})
@@ -250,39 +228,50 @@ func TestUpdateResourceName(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		existing := sampleResource("oldname", "mygroup", "mykind")
-		existing.Id = id
-		writerErr := errors.New("db error")
 
-		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rr.EXPECT().GetResourceByID(ctx, id).Return(existing, nil)
 		authAllowed(ra)
-		rw.EXPECT().UpdateResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, writerErr)
+		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
+		rr.EXPECT().GetResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(existing, nil)
+		rw.EXPECT().UpdateResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.UpdateResourceName(ctx, id, newName, &newDesc)
+		got, err := svc.UpdateResourceName(ctx, "mygroup", "mykind", "oldname", "newname")
 		require.Error(t, err)
 		assert.Nil(t, got)
-		assert.True(t, errors.Is(err, writerErr))
 	})
 }
 
 func TestDeleteResource(t *testing.T) {
 	user := sampleUser("testuser")
 	ctx := newAuthCtx(user)
-	id := uuid.New()
 
-	t.Run("deletes by id", func(t *testing.T) {
+	t.Run("authorized — deletes resource", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		rr := resmocks.NewMockReader(ctrl)
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
+		authAllowed(ra)
 		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rw.EXPECT().DeleteResourceById(ctx, id).Return(nil)
+		rw.EXPECT().DeleteResource(gomock.Any(), "mygroup", "mykind", "myresource").Return(nil)
 
 		svc := newTestService(rr, rw, ra)
-		err := svc.DeleteResource(ctx, id)
+		err := svc.DeleteResource(ctx, "mygroup", "mykind", "myresource")
 		require.NoError(t, err)
+	})
+
+	t.Run("unauthorized", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		rr := resmocks.NewMockReader(ctrl)
+		rw := resmocks.NewMockWriter(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+
+		authDenied(ra)
+
+		svc := newTestService(rr, rw, ra)
+		err := svc.DeleteResource(ctx, "mygroup", "mykind", "myresource")
+		require.Error(t, err)
+		assertForbidden(t, err)
 	})
 
 	t.Run("writer error propagates", func(t *testing.T) {
@@ -291,57 +280,21 @@ func TestDeleteResource(t *testing.T) {
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		writerErr := errors.New("db error")
+		authAllowed(ra)
 		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rw.EXPECT().DeleteResourceById(ctx, id).Return(writerErr)
+		rw.EXPECT().DeleteResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("db error"))
 
 		svc := newTestService(rr, rw, ra)
-		err := svc.DeleteResource(ctx, id)
+		err := svc.DeleteResource(ctx, "mygroup", "mykind", "myresource")
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, writerErr))
 	})
 }
 
-func TestDeleteResourceByName(t *testing.T) {
+func TestGetResources(t *testing.T) {
 	user := sampleUser("testuser")
 	ctx := newAuthCtx(user)
 
-	t.Run("deletes by name", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		rr := resmocks.NewMockReader(ctrl)
-		rw := resmocks.NewMockWriter(ctrl)
-		ra := authmocks.NewMockAuthorizer(ctrl)
-
-		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rw.EXPECT().DeleteResource(ctx, "mygroup", "mykind", "myresource").Return(nil)
-
-		svc := newTestService(rr, rw, ra)
-		err := svc.DeleteResourceByName(ctx, "mygroup", "mykind", "myresource")
-		require.NoError(t, err)
-	})
-
-	t.Run("writer error propagates", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		rr := resmocks.NewMockReader(ctrl)
-		rw := resmocks.NewMockWriter(ctrl)
-		ra := authmocks.NewMockAuthorizer(ctrl)
-
-		writerErr := errors.New("db error")
-		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
-		rw.EXPECT().DeleteResource(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(writerErr)
-
-		svc := newTestService(rr, rw, ra)
-		err := svc.DeleteResourceByName(ctx, "mygroup", "mykind", "myresource")
-		require.Error(t, err)
-		assert.True(t, errors.Is(err, writerErr))
-	})
-}
-
-func TestListResources(t *testing.T) {
-	user := sampleUser("testuser")
-	ctx := newAuthCtx(user)
-
-	t.Run("returns resources", func(t *testing.T) {
+	t.Run("group and kind — dispatches to GetResourcesByGroupAndKind", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		rr := resmocks.NewMockReader(ctrl)
 		rw := resmocks.NewMockWriter(ctrl)
@@ -351,12 +304,63 @@ func TestListResources(t *testing.T) {
 			*sampleResource("res1", "mygroup", "mykind"),
 			*sampleResource("res2", "mygroup", "mykind"),
 		}
-		rr.EXPECT().GetResources(ctx, corev1.Metadata{Group: "mygroup", Kind: "mykind"}, int32(10), int32(0)).Return(resources, nil)
+		authAllowed(ra)
+		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), "mygroup", "mykind", int32(10), int32(0)).Return(resources, nil)
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.ListResources(ctx, "mygroup", "mykind", 1, 10)
+		got, err := svc.GetResources(ctx, strPtr("mygroup"), strPtr("mykind"), 1, 10)
 		require.NoError(t, err)
 		assert.Len(t, got, 2)
+	})
+
+	t.Run("group only — dispatches to GetResourcesByGroup", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		rr := resmocks.NewMockReader(ctrl)
+		rw := resmocks.NewMockWriter(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+
+		resources := []resourcesv1.Resourcev1{
+			*sampleResource("res1", "mygroup", "kind1"),
+		}
+		authAllowed(ra)
+		rr.EXPECT().GetResourcesByGroup(gomock.Any(), "mygroup", int32(10), int32(0)).Return(resources, nil)
+
+		svc := newTestService(rr, rw, ra)
+		got, err := svc.GetResources(ctx, strPtr("mygroup"), nil, 1, 10)
+		require.NoError(t, err)
+		assert.Len(t, got, 1)
+	})
+
+	t.Run("no filter — dispatches to GetResources", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		rr := resmocks.NewMockReader(ctrl)
+		rw := resmocks.NewMockWriter(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+
+		resources := []resourcesv1.Resourcev1{
+			*sampleResource("res1", "g1", "k1"),
+		}
+		authAllowed(ra)
+		rr.EXPECT().GetResources(gomock.Any(), int32(10), int32(0)).Return(resources, nil)
+
+		svc := newTestService(rr, rw, ra)
+		got, err := svc.GetResources(ctx, nil, nil, 1, 10)
+		require.NoError(t, err)
+		assert.Len(t, got, 1)
+	})
+
+	t.Run("unauthorized — returns error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		rr := resmocks.NewMockReader(ctrl)
+		rw := resmocks.NewMockWriter(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+
+		authDenied(ra)
+
+		svc := newTestService(rr, rw, ra)
+		got, err := svc.GetResources(ctx, strPtr("mygroup"), strPtr("mykind"), 1, 10)
+		require.Error(t, err)
+		assert.Nil(t, got)
 	})
 
 	t.Run("reader error propagates", func(t *testing.T) {
@@ -365,13 +369,12 @@ func TestListResources(t *testing.T) {
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		readerErr := errors.New("db error")
-		rr.EXPECT().GetResources(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, readerErr)
+		authAllowed(ra)
+		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
 
 		svc := newTestService(rr, rw, ra)
-		got, err := svc.ListResources(ctx, "mygroup", "mykind", 1, 10)
+		got, err := svc.GetResources(ctx, strPtr("mygroup"), strPtr("mykind"), 1, 10)
 		require.Error(t, err)
 		assert.Nil(t, got)
-		assert.True(t, errors.Is(err, readerErr))
 	})
 }

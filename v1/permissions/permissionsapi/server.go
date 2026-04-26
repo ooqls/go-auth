@@ -2,7 +2,6 @@ package permissionsapi
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
@@ -51,15 +50,8 @@ func (p *PermissionsServer) ListPermissions(ctx *gin.Context, params gen_permiss
 
 	genPerms := make([]gen.Permission, 0, len(perms))
 	for _, perm := range perms {
-		actions := strings.Split(perm.Actions, ",")
 		genPerms = append(genPerms, gen.Permission{
-			Id:            perm.Id,
-			ResourceName:  perm.Name,
-			ResourceGroup: perm.Group,
-			ResourceKind:  perm.Kind,
-			Actions:       actions,
-			CreatedAt:     perm.CreatedAt,
-			UpdatedAt:     perm.UpdatedAt,
+			Permission: perm.Permission,
 		})
 	}
 
@@ -79,8 +71,7 @@ func (p *PermissionsServer) CreatePermission(ctx *gin.Context) {
 		return
 	}
 
-	perm := req.Permission
-	if err := p.service.AddPermission(authCtx, perm.ResourceName, perm.ResourceGroup, perm.ResourceKind, perm.Actions); err != nil {
+	if err := p.service.AddPermission(authCtx, req.Permission.Permission); err != nil {
 		v1.GinHandleError(ctx, err)
 		return
 	}

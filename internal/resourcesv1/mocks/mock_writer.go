@@ -37,18 +37,18 @@ func (m *MockWriter) EXPECT() *MockWriterMockRecorder {
 }
 
 // CreateResource mocks base method.
-func (m *MockWriter) CreateResource(ctx context.Context, group, kind, name, description string) (*resourcesv1.Resourcev1, error) {
+func (m *MockWriter) CreateResource(ctx context.Context, group, kind, name string) (*resourcesv1.Resourcev1, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateResource", ctx, group, kind, name, description)
+	ret := m.ctrl.Call(m, "CreateResource", ctx, group, kind, name)
 	ret0, _ := ret[0].(*resourcesv1.Resourcev1)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateResource indicates an expected call of CreateResource.
-func (mr *MockWriterMockRecorder) CreateResource(ctx, group, kind, name, description interface{}) *gomock.Call {
+func (mr *MockWriterMockRecorder) CreateResource(ctx, group, kind, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResource", reflect.TypeOf((*MockWriter)(nil).CreateResource), ctx, group, kind, name, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateResource", reflect.TypeOf((*MockWriter)(nil).CreateResource), ctx, group, kind, name)
 }
 
 // DeleteResource mocks base method.
@@ -80,16 +80,16 @@ func (mr *MockWriterMockRecorder) DeleteResourceById(ctx, id interface{}) *gomoc
 }
 
 // UpdateResource mocks base method.
-func (m *MockWriter) UpdateResource(ctx context.Context, id uuid.UUID, name, description *string) (*resourcesv1.Resourcev1, error) {
+func (m *MockWriter) UpdateResource(ctx context.Context, group, kind, name, newName string) (*resourcesv1.Resourcev1, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateResource", ctx, id, name, description)
+	ret := m.ctrl.Call(m, "UpdateResource", ctx, group, kind, name, newName)
 	ret0, _ := ret[0].(*resourcesv1.Resourcev1)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateResource indicates an expected call of UpdateResource.
-func (mr *MockWriterMockRecorder) UpdateResource(ctx, id, name, description interface{}) *gomock.Call {
+func (mr *MockWriterMockRecorder) UpdateResource(ctx, group, kind, name, newName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateResource", reflect.TypeOf((*MockWriter)(nil).UpdateResource), ctx, id, name, description)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateResource", reflect.TypeOf((*MockWriter)(nil).UpdateResource), ctx, group, kind, name, newName)
 }

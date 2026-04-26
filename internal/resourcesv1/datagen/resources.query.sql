@@ -1,19 +1,23 @@
 -- name: GetResourceByName :one
-SELECT * FROM resourcesv1 WHERE resource_name = $1 AND resource_group = $2 AND resource_kind = $3;
-
+SELECT * FROM resourcesv1 WHERE name = $1;
 
 -- name: GetResources :many
-SELECT * FROM resourcesv1 WHERE resource_group = $1 AND ($2::text = '*' OR resource_kind = $2) ORDER BY resource_name LIMIT $3 OFFSET $4;
+SELECT * FROM resourcesv1 ORDER BY name LIMIT $1 OFFSET $2;
 
 -- name: GetResourceByID :one
 SELECT * FROM resourcesv1 WHERE id = $1;
 
+-- name: GetResourcesByGroup :many
+SELECT * FROM resourcesv1 WHERE rGroup = $1 ORDER BY name LIMIT $2 OFFSET $3;
+
+-- name: GetResourcesByGroupAndKind :many
+SELECT * FROM resourcesv1 WHERE rGroup = $1 AND kind = $2 ORDER BY name LIMIT $3 OFFSET $4;
+
 -- name: CreateResource :one
 INSERT INTO resourcesv1 (
-  resource_kind,
-  resource_group,
-  resource_name,
-  description,
+  name,
+  rGroup,
+  kind,
   created_at,
   updated_at,
   id
@@ -23,20 +27,18 @@ INSERT INTO resourcesv1 (
   $3,
   $4,
   $5,
-  $6,
-  $7
+  $6
 ) RETURNING *;
 
 -- name: UpdateResource :one
 UPDATE resourcesv1 SET
-  resource_name = COALESCE(NULLIF(@name, ''), resource_name),
-  description = COALESCE(NULLIF(@description, ''), description),
+  name = $4,
   updated_at = now()
-WHERE id = @id
+WHERE rGroup = $1 AND kind = $2 AND name = $3
 RETURNING *;
 
 -- name: DeleteResource :exec
-DELETE FROM resourcesv1 WHERE resource_name = $1 AND resource_group = $2 AND resource_kind = $3;
+DELETE FROM resourcesv1 WHERE name = $1 and rGroup = $2 and kind = $3;
 
 -- name: DeleteResourceById :exec
 DELETE FROM resourcesv1 WHERE id = $1;

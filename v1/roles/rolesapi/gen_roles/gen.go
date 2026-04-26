@@ -21,13 +21,8 @@ import (
 
 // AssignPermissionRequest defines model for AssignPermissionRequest.
 type AssignPermissionRequest struct {
-	PermissionIds *[]openapi_types.UUID `json:"permission_ids,omitempty"`
-	RoleIds       *[]openapi_types.UUID `json:"role_ids,omitempty"`
-}
-
-// CreatePermissionRequest defines model for CreatePermissionRequest.
-type CreatePermissionRequest struct {
-	Permissions *[]externalRef0.Permission `json:"permissions,omitempty"`
+	Permissions *[]string           `json:"permissions,omitempty"`
+	RoleId      *openapi_types.UUID `json:"role_id,omitempty"`
 }
 
 // CreateRoleRequest defines model for CreateRoleRequest.
@@ -44,17 +39,16 @@ type CreateRoleResponse struct {
 
 // UnassignPermissionRequest defines model for UnassignPermissionRequest.
 type UnassignPermissionRequest struct {
-	PermissionIds *[]openapi_types.UUID `json:"permission_ids,omitempty"`
-	RoleIds       *[]openapi_types.UUID `json:"role_ids,omitempty"`
+	Permissions *[]string           `json:"permissions,omitempty"`
+	RoleId      *openapi_types.UUID `json:"role_id,omitempty"`
 }
 
-// GetAuthPermissionsParams defines parameters for GetAuthPermissions.
-type GetAuthPermissionsParams struct {
-	// Page The page number
-	Page *int `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize The page size
-	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
+// UpdateRoleRequest defines model for UpdateRoleRequest.
+type UpdateRoleRequest struct {
+	Description *string            `json:"description,omitempty"`
+	Hierarchy   *int               `json:"hierarchy,omitempty"`
+	Id          openapi_types.UUID `json:"id"`
+	Name        *string            `json:"name,omitempty"`
 }
 
 // GetAuthRolesParams defines parameters for GetAuthRoles.
@@ -66,9 +60,6 @@ type GetAuthRolesParams struct {
 	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
-// CreateAuthPermissionJSONRequestBody defines body for CreateAuthPermission for application/json ContentType.
-type CreateAuthPermissionJSONRequestBody = CreatePermissionRequest
-
 // DeleteAuthRoleJSONRequestBody defines body for DeleteAuthRole for application/json ContentType.
 type DeleteAuthRoleJSONRequestBody = externalRef0.DeleteRequest
 
@@ -76,7 +67,7 @@ type DeleteAuthRoleJSONRequestBody = externalRef0.DeleteRequest
 type CreateAuthRoleJSONRequestBody = CreateRoleRequest
 
 // UpdateAuthRoleJSONRequestBody defines body for UpdateAuthRole for application/json ContentType.
-type UpdateAuthRoleJSONRequestBody = externalRef0.UpdateRequest
+type UpdateAuthRoleJSONRequestBody = UpdateRoleRequest
 
 // UnassignRolePermissionsJSONRequestBody defines body for UnassignRolePermissions for application/json ContentType.
 type UnassignRolePermissionsJSONRequestBody = UnassignPermissionRequest
@@ -157,14 +148,6 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetAuthPermissions request
-	GetAuthPermissions(ctx context.Context, params *GetAuthPermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateAuthPermissionWithBody request with any body
-	CreateAuthPermissionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateAuthPermission(ctx context.Context, body CreateAuthPermissionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// DeleteAuthRoleWithBody request with any body
 	DeleteAuthRoleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -195,42 +178,6 @@ type ClientInterface interface {
 
 	// GetAuthRoles request
 	GetAuthRoles(ctx context.Context, params *GetAuthRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-}
-
-func (c *Client) GetAuthPermissions(ctx context.Context, params *GetAuthPermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAuthPermissionsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateAuthPermissionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAuthPermissionRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateAuthPermission(ctx context.Context, body CreateAuthPermissionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateAuthPermissionRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
 }
 
 func (c *Client) DeleteAuthRoleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -375,111 +322,6 @@ func (c *Client) GetAuthRoles(ctx context.Context, params *GetAuthRolesParams, r
 		return nil, err
 	}
 	return c.Client.Do(req)
-}
-
-// NewGetAuthPermissionsRequest generates requests for GetAuthPermissions
-func NewGetAuthPermissionsRequest(server string, params *GetAuthPermissionsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/auth/permissions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		queryValues := queryURL.Query()
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page", runtime.ParamLocationQuery, *params.Page); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "page_size", runtime.ParamLocationQuery, *params.PageSize); err != nil {
-				return nil, err
-			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-				return nil, err
-			} else {
-				for k, v := range parsed {
-					for _, v2 := range v {
-						queryValues.Add(k, v2)
-					}
-				}
-			}
-
-		}
-
-		queryURL.RawQuery = queryValues.Encode()
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateAuthPermissionRequest calls the generic CreateAuthPermission builder with application/json body
-func NewCreateAuthPermissionRequest(server string, body CreateAuthPermissionJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateAuthPermissionRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateAuthPermissionRequestWithBody generates requests for CreateAuthPermission with any type of body
-func NewCreateAuthPermissionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/auth/permissions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
 }
 
 // NewDeleteAuthRoleRequest calls the generic DeleteAuthRole builder with application/json body
@@ -824,14 +666,6 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetAuthPermissionsWithResponse request
-	GetAuthPermissionsWithResponse(ctx context.Context, params *GetAuthPermissionsParams, reqEditors ...RequestEditorFn) (*GetAuthPermissionsResponse, error)
-
-	// CreateAuthPermissionWithBodyWithResponse request with any body
-	CreateAuthPermissionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAuthPermissionResponse, error)
-
-	CreateAuthPermissionWithResponse(ctx context.Context, body CreateAuthPermissionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAuthPermissionResponse, error)
-
 	// DeleteAuthRoleWithBodyWithResponse request with any body
 	DeleteAuthRoleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAuthRoleResponse, error)
 
@@ -862,50 +696,6 @@ type ClientWithResponsesInterface interface {
 
 	// GetAuthRolesWithResponse request
 	GetAuthRolesWithResponse(ctx context.Context, params *GetAuthRolesParams, reqEditors ...RequestEditorFn) (*GetAuthRolesResponse, error)
-}
-
-type GetAuthPermissionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]externalRef0.Permission
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAuthPermissionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAuthPermissionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type CreateAuthPermissionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *externalRef0.Permission
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateAuthPermissionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateAuthPermissionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
 }
 
 type DeleteAuthRoleResponse struct {
@@ -1062,32 +852,6 @@ func (r GetAuthRolesResponse) StatusCode() int {
 	return 0
 }
 
-// GetAuthPermissionsWithResponse request returning *GetAuthPermissionsResponse
-func (c *ClientWithResponses) GetAuthPermissionsWithResponse(ctx context.Context, params *GetAuthPermissionsParams, reqEditors ...RequestEditorFn) (*GetAuthPermissionsResponse, error) {
-	rsp, err := c.GetAuthPermissions(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAuthPermissionsResponse(rsp)
-}
-
-// CreateAuthPermissionWithBodyWithResponse request with arbitrary body returning *CreateAuthPermissionResponse
-func (c *ClientWithResponses) CreateAuthPermissionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAuthPermissionResponse, error) {
-	rsp, err := c.CreateAuthPermissionWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateAuthPermissionResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateAuthPermissionWithResponse(ctx context.Context, body CreateAuthPermissionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAuthPermissionResponse, error) {
-	rsp, err := c.CreateAuthPermission(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateAuthPermissionResponse(rsp)
-}
-
 // DeleteAuthRoleWithBodyWithResponse request with arbitrary body returning *DeleteAuthRoleResponse
 func (c *ClientWithResponses) DeleteAuthRoleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteAuthRoleResponse, error) {
 	rsp, err := c.DeleteAuthRoleWithBody(ctx, contentType, body, reqEditors...)
@@ -1189,58 +953,6 @@ func (c *ClientWithResponses) GetAuthRolesWithResponse(ctx context.Context, para
 		return nil, err
 	}
 	return ParseGetAuthRolesResponse(rsp)
-}
-
-// ParseGetAuthPermissionsResponse parses an HTTP response from a GetAuthPermissionsWithResponse call
-func ParseGetAuthPermissionsResponse(rsp *http.Response) (*GetAuthPermissionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAuthPermissionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []externalRef0.Permission
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateAuthPermissionResponse parses an HTTP response from a CreateAuthPermissionWithResponse call
-func ParseCreateAuthPermissionResponse(rsp *http.Response) (*CreateAuthPermissionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateAuthPermissionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest externalRef0.Permission
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	}
-
-	return response, nil
 }
 
 // ParseDeleteAuthRoleResponse parses an HTTP response from a DeleteAuthRoleWithResponse call
@@ -1428,12 +1140,6 @@ func ParseGetAuthRolesResponse(rsp *http.Response) (*GetAuthRolesResponse, error
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
-	// (GET /auth/permissions)
-	GetAuthPermissions(c *gin.Context, params GetAuthPermissionsParams)
-
-	// (POST /auth/permissions)
-	CreateAuthPermission(c *gin.Context)
-
 	// (DELETE /auth/role)
 	DeleteAuthRole(c *gin.Context)
 
@@ -1464,53 +1170,6 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
-
-// GetAuthPermissions operation middleware
-func (siw *ServerInterfaceWrapper) GetAuthPermissions(c *gin.Context) {
-
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetAuthPermissionsParams
-
-	// ------------- Optional query parameter "page" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page", c.Request.URL.Query(), &params.Page)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	// ------------- Optional query parameter "page_size" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "page_size", c.Request.URL.Query(), &params.PageSize)
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page_size: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.GetAuthPermissions(c, params)
-}
-
-// CreateAuthPermission operation middleware
-func (siw *ServerInterfaceWrapper) CreateAuthPermission(c *gin.Context) {
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.CreateAuthPermission(c)
-}
 
 // DeleteAuthRole operation middleware
 func (siw *ServerInterfaceWrapper) DeleteAuthRole(c *gin.Context) {
@@ -1662,8 +1321,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/auth/permissions", wrapper.GetAuthPermissions)
-	router.POST(options.BaseURL+"/auth/permissions", wrapper.CreateAuthPermission)
 	router.DELETE(options.BaseURL+"/auth/role", wrapper.DeleteAuthRole)
 	router.POST(options.BaseURL+"/auth/role", wrapper.CreateAuthRole)
 	router.PUT(options.BaseURL+"/auth/role", wrapper.UpdateAuthRole)

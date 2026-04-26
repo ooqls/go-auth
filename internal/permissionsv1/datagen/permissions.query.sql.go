@@ -13,91 +13,62 @@ import (
 
 const createPermission = `-- name: CreatePermission :one
 INSERT INTO permissionsv1 (
-  name,
-  "group",
-  kind,
-  actions,
-  created_at,
-  updated_at
+  permission
 ) VALUES (
-  $1,
-  $2,
-  $3,
-  $4,
-  now(),
-  now()
-) RETURNING id, name, "group", kind, actions, created_at, updated_at
+  $1
+) RETURNING permission
 `
 
-type CreatePermissionParams struct {
-	Name    string
-	Group   string
-	Kind    string
-	Actions string
-}
-
-func (q *Queries) CreatePermission(ctx context.Context, arg CreatePermissionParams) (Permissionsv1, error) {
-	row := q.db.QueryRow(ctx, createPermission,
-		arg.Name,
-		arg.Group,
-		arg.Kind,
-		arg.Actions,
-	)
-	var i Permissionsv1
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Group,
-		&i.Kind,
-		&i.Actions,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+func (q *Queries) CreatePermission(ctx context.Context, permission string) (string, error) {
+	row := q.db.QueryRow(ctx, createPermission, permission)
+	err := row.Scan(&permission)
+	return permission, err
 }
 
 const deletePermission = `-- name: DeletePermission :exec
-DELETE FROM permissionsv1 WHERE name = $1 AND "group" = $2 AND kind = $3
+DELETE FROM permissionsv1 WHERE permission = $1
 `
 
-type DeletePermissionParams struct {
-	Name  string
-	Group string
-	Kind  string
-}
-
-func (q *Queries) DeletePermission(ctx context.Context, arg DeletePermissionParams) error {
-	_, err := q.db.Exec(ctx, deletePermission, arg.Name, arg.Group, arg.Kind)
+func (q *Queries) DeletePermission(ctx context.Context, permission string) error {
+	_, err := q.db.Exec(ctx, deletePermission, permission)
 	return err
 }
 
-const getPermission = `-- name: GetPermission :one
-SELECT id, name, "group", kind, actions, created_at, updated_at FROM permissionsv1 WHERE name = $1 AND "group" = $2 AND kind = $3
+const getOrCreatePermission = `-- name: GetOrCreatePermission :one
+INSERT INTO permissionsv1 (permission)
+VALUES ($1)
+ON CONFLICT (permission) DO NOTHING
+RETURNING permission
 `
 
-type GetPermissionParams struct {
-	Name  string
-	Group string
-	Kind  string
+func (q *Queries) GetOrCreatePermission(ctx context.Context, permission string) (string, error) {
+	row := q.db.QueryRow(ctx, getOrCreatePermission, permission)
+	err := row.Scan(&permission)
+	return permission, err
 }
 
-func (q *Queries) GetPermission(ctx context.Context, arg GetPermissionParams) (Permissionsv1, error) {
-	row := q.db.QueryRow(ctx, getPermission, arg.Name, arg.Group, arg.Kind)
-	var i Permissionsv1
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Group,
-		&i.Kind,
-		&i.Actions,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+const getPermissionById = `-- name: GetPermissionById :one
+SELECT permission FROM permissionsv1 WHERE permission = $1
+`
+
+func (q *Queries) GetPermissionById(ctx context.Context, permission string) (string, error) {
+	row := q.db.QueryRow(ctx, getPermissionById, permission)
+	err := row.Scan(&permission)
+	return permission, err
+}
+
+const getPermissionByName = `-- name: GetPermissionByName :one
+SELECT permission FROM permissionsv1 WHERE permission = $1
+`
+
+func (q *Queries) GetPermissionByName(ctx context.Context, permission string) (string, error) {
+	row := q.db.QueryRow(ctx, getPermissionByName, permission)
+	err := row.Scan(&permission)
+	return permission, err
 }
 
 const getPermissions = `-- name: GetPermissions :many
-SELECT id, name, "group", kind, actions, created_at, updated_at FROM permissionsv1 ORDER BY name LIMIT $1 OFFSET $2
+SELECT permission FROM permissionsv1 ORDER BY permission LIMIT $1 OFFSET $2
 `
 
 type GetPermissionsParams struct {
@@ -105,27 +76,19 @@ type GetPermissionsParams struct {
 	Offset int32
 }
 
-func (q *Queries) GetPermissions(ctx context.Context, arg GetPermissionsParams) ([]Permissionsv1, error) {
+func (q *Queries) GetPermissions(ctx context.Context, arg GetPermissionsParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, getPermissions, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Permissionsv1
+	var items []string
 	for rows.Next() {
-		var i Permissionsv1
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Group,
-			&i.Kind,
-			&i.Actions,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
+		var permission string
+		if err := rows.Scan(&permission); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, permission)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -135,52 +98,26 @@ func (q *Queries) GetPermissions(ctx context.Context, arg GetPermissionsParams) 
 
 const getPermissionsForUser = `-- name: GetPermissionsForUser :many
 SELECT
-  p.id        AS permission_id,
-  p.name      AS permission_name,
-  p."group"   AS permission_group,
-  p.kind      AS permission_kind,
-  p.actions   AS actions
+  p.permission AS permission
 FROM rolebindingsv1 rb
 INNER JOIN permissionbindingsv1 pb ON rb.role_id = pb.role_id
-INNER JOIN permissionsv1 p ON pb.permission_id = p.id
+INNER JOIN permissionsv1 p ON pb.permission = p.permission
 WHERE rb.user_id = $1
-  AND (p."group" = $2 OR p."group" = '*')
-  AND (p.kind    = $3 OR p.kind    = '*')
 `
 
-type GetPermissionsForUserParams struct {
-	UserID uuid.UUID
-	Group  string
-	Kind   string
-}
-
-type GetPermissionsForUserRow struct {
-	PermissionID    uuid.UUID
-	PermissionName  string
-	PermissionGroup string
-	PermissionKind  string
-	Actions         string
-}
-
-func (q *Queries) GetPermissionsForUser(ctx context.Context, arg GetPermissionsForUserParams) ([]GetPermissionsForUserRow, error) {
-	rows, err := q.db.Query(ctx, getPermissionsForUser, arg.UserID, arg.Group, arg.Kind)
+func (q *Queries) GetPermissionsForUser(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	rows, err := q.db.Query(ctx, getPermissionsForUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPermissionsForUserRow
+	var items []string
 	for rows.Next() {
-		var i GetPermissionsForUserRow
-		if err := rows.Scan(
-			&i.PermissionID,
-			&i.PermissionName,
-			&i.PermissionGroup,
-			&i.PermissionKind,
-			&i.Actions,
-		); err != nil {
+		var permission string
+		if err := rows.Scan(&permission); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, permission)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -190,50 +127,26 @@ func (q *Queries) GetPermissionsForUser(ctx context.Context, arg GetPermissionsF
 
 const getPermissionsForUserByGroup = `-- name: GetPermissionsForUserByGroup :many
 SELECT
-  p.id        AS permission_id,
-  p.name      AS permission_name,
-  p."group"   AS permission_group,
-  p.kind      AS permission_kind,
-  p.actions   AS actions
+  p.permission AS permission
 FROM rolebindingsv1 rb
 INNER JOIN permissionbindingsv1 pb ON rb.role_id = pb.role_id
-INNER JOIN permissionsv1 p ON pb.permission_id = p.id
+INNER JOIN permissionsv1 p ON pb.permission = p.permission
 WHERE rb.user_id = $1
-  AND (p."group" = $2 OR p."group" = '*')
 `
 
-type GetPermissionsForUserByGroupParams struct {
-	UserID uuid.UUID
-	Group  string
-}
-
-type GetPermissionsForUserByGroupRow struct {
-	PermissionID    uuid.UUID
-	PermissionName  string
-	PermissionGroup string
-	PermissionKind  string
-	Actions         string
-}
-
-func (q *Queries) GetPermissionsForUserByGroup(ctx context.Context, arg GetPermissionsForUserByGroupParams) ([]GetPermissionsForUserByGroupRow, error) {
-	rows, err := q.db.Query(ctx, getPermissionsForUserByGroup, arg.UserID, arg.Group)
+func (q *Queries) GetPermissionsForUserByGroup(ctx context.Context, userID uuid.UUID) ([]string, error) {
+	rows, err := q.db.Query(ctx, getPermissionsForUserByGroup, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPermissionsForUserByGroupRow
+	var items []string
 	for rows.Next() {
-		var i GetPermissionsForUserByGroupRow
-		if err := rows.Scan(
-			&i.PermissionID,
-			&i.PermissionName,
-			&i.PermissionGroup,
-			&i.PermissionKind,
-			&i.Actions,
-		); err != nil {
+		var permission string
+		if err := rows.Scan(&permission); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, permission)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -246,38 +159,20 @@ SELECT EXISTS (
   SELECT 1
   FROM rolebindingsv1 rb
   INNER JOIN permissionbindingsv1 pb ON rb.role_id = pb.role_id
-  INNER JOIN permissionsv1 p ON pb.permission_id = p.id
+  INNER JOIN permissionsv1 p ON pb.permission = p.permission
   WHERE rb.user_id = $1
-    AND (p.name    = $2 OR p.name    = '*')
-    AND (p."group" = $3 OR p."group" = '*')
-    AND (p.kind    = $4 OR p.kind    = '*')
-    AND (
-      p.actions = '*'
-      OR p.actions = $5
-      OR p.actions LIKE $5 || ',%'
-      OR p.actions LIKE '%,' || $5
-      OR p.actions LIKE '%,' || $5 || ',%'
-    )
-) AS has_permission
+    AND (p.permission = $2 OR p.permission = '*')
+)
 `
 
 type HasPermissionParams struct {
-	UserID  uuid.UUID
-	Name    string
-	Group   string
-	Kind    string
-	Actions string
+	UserID     uuid.UUID
+	Permission string
 }
 
 func (q *Queries) HasPermission(ctx context.Context, arg HasPermissionParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasPermission,
-		arg.UserID,
-		arg.Name,
-		arg.Group,
-		arg.Kind,
-		arg.Actions,
-	)
-	var has_permission bool
-	err := row.Scan(&has_permission)
-	return has_permission, err
+	row := q.db.QueryRow(ctx, hasPermission, arg.UserID, arg.Permission)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

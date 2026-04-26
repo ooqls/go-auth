@@ -11,7 +11,7 @@ valkeys:
   auth:
     enabled: true
     username: "admin"
-    password: "admin"
+    password_file: "/config/valkeys/pw"
   extra: {}
   database: "1"
 postgres:
@@ -27,6 +27,6 @@ postgres:
   auth:
     enabled: false
     username: "admin"
-    password: "admin"
+    password_file: "/config/postgres/pw"
   extra: {}
   database: appdb

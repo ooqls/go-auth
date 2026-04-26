@@ -6,8 +6,6 @@ tls:
 sql:
   enabled: true
   sql_package: SQLX
-  sql_files_dirs:
-  - /migrations/
 registry:
   enabled: true
   path: /config/registry/registry.yaml

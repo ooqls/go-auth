@@ -10,7 +10,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	uuid "github.com/google/uuid"
 	authorizationv1 "github.com/ooqls/go-auth/internal/authorizationv1"
-	corev1 "github.com/ooqls/go-auth/internal/corev1"
 )
 
 // MockAuthorizer is a mock of Authorizer interface.
@@ -37,17 +36,17 @@ func (m *MockAuthorizer) EXPECT() *MockAuthorizerMockRecorder {
 }
 
 // IsAuthorizedToAssignPermission mocks base method.
-func (m *MockAuthorizer) IsAuthorizedToAssignPermission(ctx *authorizationv1.Context, roleID, permID uuid.UUID) error {
+func (m *MockAuthorizer) IsAuthorizedToAssignPermission(ctx *authorizationv1.Context, roleID uuid.UUID, permission string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsAuthorizedToAssignPermission", ctx, roleID, permID)
+	ret := m.ctrl.Call(m, "IsAuthorizedToAssignPermission", ctx, roleID, permission)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // IsAuthorizedToAssignPermission indicates an expected call of IsAuthorizedToAssignPermission.
-func (mr *MockAuthorizerMockRecorder) IsAuthorizedToAssignPermission(ctx, roleID, permID interface{}) *gomock.Call {
+func (mr *MockAuthorizerMockRecorder) IsAuthorizedToAssignPermission(ctx, roleID, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedToAssignPermission", reflect.TypeOf((*MockAuthorizer)(nil).IsAuthorizedToAssignPermission), ctx, roleID, permID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedToAssignPermission", reflect.TypeOf((*MockAuthorizer)(nil).IsAuthorizedToAssignPermission), ctx, roleID, permission)
 }
 
 // IsAuthorizedToModifyUser mocks base method.
@@ -65,7 +64,7 @@ func (mr *MockAuthorizerMockRecorder) IsAuthorizedToModifyUser(ctx, targetUserID
 }
 
 // IsAuthorizedToPerformAction mocks base method.
-func (m *MockAuthorizer) IsAuthorizedToPerformAction(ctx *authorizationv1.Context, action authorizationv1.Action, target corev1.Object) error {
+func (m *MockAuthorizer) IsAuthorizedToPerformAction(ctx *authorizationv1.Context, action authorizationv1.Action, target string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsAuthorizedToPerformAction", ctx, action, target)
 	ret0, _ := ret[0].(error)
@@ -76,20 +75,6 @@ func (m *MockAuthorizer) IsAuthorizedToPerformAction(ctx *authorizationv1.Contex
 func (mr *MockAuthorizerMockRecorder) IsAuthorizedToPerformAction(ctx, action, target interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedToPerformAction", reflect.TypeOf((*MockAuthorizer)(nil).IsAuthorizedToPerformAction), ctx, action, target)
-}
-
-// IsAuthorizedToPerformGlobalAction mocks base method.
-func (m *MockAuthorizer) IsAuthorizedToPerformGlobalAction(ctx *authorizationv1.Context, action authorizationv1.Action, target corev1.Metadata) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsAuthorizedToPerformGlobalAction", ctx, action, target)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// IsAuthorizedToPerformGlobalAction indicates an expected call of IsAuthorizedToPerformGlobalAction.
-func (mr *MockAuthorizerMockRecorder) IsAuthorizedToPerformGlobalAction(ctx, action, target interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedToPerformGlobalAction", reflect.TypeOf((*MockAuthorizer)(nil).IsAuthorizedToPerformGlobalAction), ctx, action, target)
 }
 
 // IsAuthorizedToReadRolePermissions mocks base method.

@@ -36,17 +36,17 @@ func (m *MockWriter) EXPECT() *MockWriterMockRecorder {
 }
 
 // AssignPermission mocks base method.
-func (m *MockWriter) AssignPermission(ctx contexts.LContext, roleID, permissionID uuid.UUID) error {
+func (m *MockWriter) AssignPermission(ctx contexts.LContext, roleID uuid.UUID, permission string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AssignPermission", ctx, roleID, permissionID)
+	ret := m.ctrl.Call(m, "AssignPermission", ctx, roleID, permission)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AssignPermission indicates an expected call of AssignPermission.
-func (mr *MockWriterMockRecorder) AssignPermission(ctx, roleID, permissionID interface{}) *gomock.Call {
+func (mr *MockWriterMockRecorder) AssignPermission(ctx, roleID, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignPermission", reflect.TypeOf((*MockWriter)(nil).AssignPermission), ctx, roleID, permissionID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AssignPermission", reflect.TypeOf((*MockWriter)(nil).AssignPermission), ctx, roleID, permission)
 }
 
 // UnassignAllPermissions mocks base method.
@@ -64,29 +64,29 @@ func (mr *MockWriterMockRecorder) UnassignAllPermissions(ctx, roleID interface{}
 }
 
 // UnassignPermission mocks base method.
-func (m *MockWriter) UnassignPermission(ctx contexts.LContext, roleID, permissionID uuid.UUID) error {
+func (m *MockWriter) UnassignPermission(ctx contexts.LContext, roleID uuid.UUID, permission string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UnassignPermission", ctx, roleID, permissionID)
+	ret := m.ctrl.Call(m, "UnassignPermission", ctx, roleID, permission)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UnassignPermission indicates an expected call of UnassignPermission.
-func (mr *MockWriterMockRecorder) UnassignPermission(ctx, roleID, permissionID interface{}) *gomock.Call {
+func (mr *MockWriterMockRecorder) UnassignPermission(ctx, roleID, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnassignPermission", reflect.TypeOf((*MockWriter)(nil).UnassignPermission), ctx, roleID, permissionID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnassignPermission", reflect.TypeOf((*MockWriter)(nil).UnassignPermission), ctx, roleID, permission)
 }
 
 // UnassignPermissionFromAllRoles mocks base method.
-func (m *MockWriter) UnassignPermissionFromAllRoles(ctx contexts.LContext, permissionID uuid.UUID) error {
+func (m *MockWriter) UnassignPermissionFromAllRoles(ctx contexts.LContext, permission string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UnassignPermissionFromAllRoles", ctx, permissionID)
+	ret := m.ctrl.Call(m, "UnassignPermissionFromAllRoles", ctx, permission)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UnassignPermissionFromAllRoles indicates an expected call of UnassignPermissionFromAllRoles.
-func (mr *MockWriterMockRecorder) UnassignPermissionFromAllRoles(ctx, permissionID interface{}) *gomock.Call {
+func (mr *MockWriterMockRecorder) UnassignPermissionFromAllRoles(ctx, permission interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnassignPermissionFromAllRoles", reflect.TypeOf((*MockWriter)(nil).UnassignPermissionFromAllRoles), ctx, permissionID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnassignPermissionFromAllRoles", reflect.TypeOf((*MockWriter)(nil).UnassignPermissionFromAllRoles), ctx, permission)
 }

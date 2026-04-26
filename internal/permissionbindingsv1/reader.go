@@ -45,7 +45,7 @@ func (r *SQLReader) GetPermissionBindingsForRole(ctx contexts.LContext, roleId u
 		bindings = append(bindings, Permissionbindingv1{
 			Metadata:     Metadata,
 			RoleID:       item.RoleID,
-			PermissionID: item.PermissionID,
+			Permission: item.Permission,
 		})
 	}
 
@@ -73,7 +73,7 @@ func (r *SQLReader) GetPermissionsBindings(ctx contexts.LContext, page, pageSize
 		bindings = append(bindings, Permissionbindingv1{
 			Metadata:     Metadata,
 			RoleID:       item.RoleID,
-			PermissionID: item.PermissionID,
+			Permission: item.Permission,
 		})
 	}
 

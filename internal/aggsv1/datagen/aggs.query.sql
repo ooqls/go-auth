@@ -11,18 +11,12 @@ SELECT
   r.description AS role_description,
   r.created_at  AS role_created_at,
   r.updated_at  AS role_updated_at,
-  p.id          AS permission_id,
-  p.name        AS permission_name,
-  p."group"     AS permission_group,
-  p.kind        AS permission_kind,
-  p.actions     AS actions,
-  p.created_at  AS permission_created_at,
-  p.updated_at  AS permission_updated_at
+  p.permission     AS permission
 FROM usersv1 u
 LEFT JOIN rolebindingsv1 rb ON u.id = rb.user_id
 LEFT JOIN rolesv1 r ON rb.role_id = r.id
 LEFT JOIN permissionbindingsv1 pb ON r.id = pb.role_id
-LEFT JOIN permissionsv1 p ON pb.permission_id = p.id
+LEFT JOIN permissionsv1 p ON pb.permission = p.permission
 WHERE u.id = $1;
 
 -- name: GetRoleAggregate :many
@@ -33,16 +27,10 @@ SELECT
   r.description AS description,
   r.created_at  AS role_created_at,
   r.updated_at  AS role_updated_at,
-  p.id          AS permission_id,
-  p.name        AS permission_name,
-  p."group"     AS permission_group,
-  p.kind        AS permission_kind,
-  p.actions     AS actions,
-  p.created_at  AS permission_created_at,
-  p.updated_at  AS permission_updated_at
+  p.permission     AS permission
 FROM rolesv1 r
 INNER JOIN permissionbindingsv1 pb ON r.id = pb.role_id
-INNER JOIN permissionsv1 p ON pb.permission_id = p.id
+INNER JOIN permissionsv1 p ON pb.permission = p.permission
 WHERE r.id = $1;
 
 

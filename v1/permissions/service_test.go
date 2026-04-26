@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
 	authmocks "github.com/ooqls/go-auth/internal/authorizationv1/mocks"
-	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/permissionsv1"
 	permmocks "github.com/ooqls/go-auth/internal/permissionsv1/mocks"
 	"github.com/ooqls/go-auth/internal/usersv1"
@@ -46,12 +45,8 @@ func authDenied(mock *authmocks.MockAuthorizer) {
 
 func samplePermission(name string) permissionsv1.Permission {
 	return permissionsv1.Permission{
-		Object: corev1.Object{
-			Metadata: permissionsv1.Metadata,
-			Id:       uuid.New(),
-			Name:     name,
-		},
-		Actions: "read",
+		Metadata:   permissionsv1.Metadata,
+		Permission: name,
 	}
 }
 
@@ -81,11 +76,13 @@ func TestAddPermission(t *testing.T) {
 		pw := permmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
+		perm := samplePermission("myperm")
 		authAllowed(ra)
-		pw.EXPECT().CreatePermission("myperm", "mygroup", "mykind", []string{"read"}).Return(nil)
+		pr.EXPECT().GetPermission(gomock.Any(), "myperm").Return(nil, nil)
+		pw.EXPECT().CreatePermission(gomock.Any(), "myperm").Return(&perm, nil)
 
 		svc := newTestService(pr, pw, ra)
-		err := svc.AddPermission(ctx, "myperm", "mygroup", "mykind", []string{"read"})
+		err := svc.AddPermission(ctx, "myperm")
 		require.NoError(t, err)
 	})
 
@@ -98,9 +95,26 @@ func TestAddPermission(t *testing.T) {
 		authDenied(ra)
 
 		svc := newTestService(pr, pw, ra)
-		err := svc.AddPermission(ctx, "myperm", "mygroup", "mykind", []string{"read"})
+		err := svc.AddPermission(ctx, "myperm")
 		require.Error(t, err)
 		assertForbidden(t, err)
+	})
+
+	t.Run("already exists — returns error", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		pr := permmocks.NewMockReader(ctrl)
+		pw := permmocks.NewMockWriter(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+
+		existing := samplePermission("myperm")
+		authAllowed(ra)
+		pr.EXPECT().GetPermission(gomock.Any(), "myperm").Return(&existing, nil)
+
+		svc := newTestService(pr, pw, ra)
+		err := svc.AddPermission(ctx, "myperm")
+		require.Error(t, err)
+		var target *v1.AlreadyExistsError
+		assert.ErrorAs(t, err, &target)
 	})
 
 	t.Run("writer error propagates", func(t *testing.T) {
@@ -110,19 +124,20 @@ func TestAddPermission(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		authAllowed(ra)
+		pr.EXPECT().GetPermission(gomock.Any(), "myperm").Return(nil, nil)
 		writerErr := errors.New("db error")
-		pw.EXPECT().CreatePermission(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(writerErr)
+		pw.EXPECT().CreatePermission(gomock.Any(), "myperm").Return(nil, writerErr)
 
 		svc := newTestService(pr, pw, ra)
-		err := svc.AddPermission(ctx, "myperm", "mygroup", "mykind", []string{"read"})
+		err := svc.AddPermission(ctx, "myperm")
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, writerErr))
 	})
 }
 
 func TestDeletePermission(t *testing.T) {
 	user := sampleUser("testuser")
 	ctx := newAuthCtx(user)
+	permission := "myperm"
 
 	t.Run("authorized — deletes permission", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -131,10 +146,10 @@ func TestDeletePermission(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		authAllowed(ra)
-		pw.EXPECT().DeletePermission("myperm", "mygroup", "mykind").Return(nil)
+		pw.EXPECT().DeletePermission(gomock.Any(), permission).Return(nil)
 
 		svc := newTestService(pr, pw, ra)
-		err := svc.DeletePermission(ctx, "myperm", "mygroup", "mykind")
+		err := svc.DeletePermission(ctx, permission)
 		require.NoError(t, err)
 	})
 
@@ -147,7 +162,7 @@ func TestDeletePermission(t *testing.T) {
 		authDenied(ra)
 
 		svc := newTestService(pr, pw, ra)
-		err := svc.DeletePermission(ctx, "myperm", "mygroup", "mykind")
+		err := svc.DeletePermission(ctx, permission)
 		require.Error(t, err)
 		assertForbidden(t, err)
 	})
@@ -160,12 +175,11 @@ func TestDeletePermission(t *testing.T) {
 
 		authAllowed(ra)
 		writerErr := errors.New("db error")
-		pw.EXPECT().DeletePermission(gomock.Any(), gomock.Any(), gomock.Any()).Return(writerErr)
+		pw.EXPECT().DeletePermission(gomock.Any(), permission).Return(writerErr)
 
 		svc := newTestService(pr, pw, ra)
-		err := svc.DeletePermission(ctx, "myperm", "mygroup", "mykind")
+		err := svc.DeletePermission(ctx, permission)
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, writerErr))
 	})
 }
 
@@ -180,11 +194,11 @@ func TestGetPermission(t *testing.T) {
 		pw := permmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		pr.EXPECT().GetPermission(ctx, "myperm", "mygroup", "mykind").Return(&perm, nil)
 		authAllowed(ra)
+		pr.EXPECT().GetPermission(gomock.Any(), "myperm").Return(&perm, nil)
 
 		svc := newTestService(pr, pw, ra)
-		got, err := svc.GetPermission(ctx, "myperm", "mygroup", "mykind")
+		got, err := svc.GetPermission(ctx, "myperm")
 		require.NoError(t, err)
 		assert.Equal(t, &perm, got)
 	})
@@ -195,11 +209,10 @@ func TestGetPermission(t *testing.T) {
 		pw := permmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		pr.EXPECT().GetPermission(ctx, "myperm", "mygroup", "mykind").Return(&perm, nil)
 		authDenied(ra)
 
 		svc := newTestService(pr, pw, ra)
-		got, err := svc.GetPermission(ctx, "myperm", "mygroup", "mykind")
+		got, err := svc.GetPermission(ctx, "myperm")
 		require.Error(t, err)
 		assert.Nil(t, got)
 		assertForbidden(t, err)
@@ -211,10 +224,11 @@ func TestGetPermission(t *testing.T) {
 		pw := permmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		pr.EXPECT().GetPermission(ctx, "myperm", "mygroup", "mykind").Return(nil, nil)
+		authAllowed(ra)
+		pr.EXPECT().GetPermission(gomock.Any(), "myperm").Return(nil, nil)
 
 		svc := newTestService(pr, pw, ra)
-		got, err := svc.GetPermission(ctx, "myperm", "mygroup", "mykind")
+		got, err := svc.GetPermission(ctx, "myperm")
 		require.Error(t, err)
 		assert.Nil(t, got)
 		assertNotFound(t, err)
@@ -226,14 +240,14 @@ func TestGetPermission(t *testing.T) {
 		pw := permmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
+		authAllowed(ra)
 		readerErr := errors.New("db error")
-		pr.EXPECT().GetPermission(ctx, "myperm", "mygroup", "mykind").Return(nil, readerErr)
+		pr.EXPECT().GetPermission(gomock.Any(), "myperm").Return(nil, readerErr)
 
 		svc := newTestService(pr, pw, ra)
-		got, err := svc.GetPermission(ctx, "myperm", "mygroup", "mykind")
+		got, err := svc.GetPermission(ctx, "myperm")
 		require.Error(t, err)
 		assert.Nil(t, got)
-		assert.True(t, errors.Is(err, readerErr))
 	})
 }
 
@@ -241,7 +255,7 @@ func TestGetPermissions(t *testing.T) {
 	user := sampleUser("testuser")
 	ctx := newAuthCtx(user)
 
-	t.Run("all authorized — returns all", func(t *testing.T) {
+	t.Run("authorized — returns all", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		pr := permmocks.NewMockReader(ctrl)
 		pw := permmocks.NewMockWriter(ctrl)
@@ -251,8 +265,8 @@ func TestGetPermissions(t *testing.T) {
 			samplePermission("perm1"),
 			samplePermission("perm2"),
 		}
-		pr.EXPECT().GetPermissions(ctx, 1, 10).Return(perms, nil)
 		authAllowed(ra)
+		pr.EXPECT().GetPermissions(gomock.Any(), 1, 10).Return(perms, nil)
 
 		svc := newTestService(pr, pw, ra)
 		got, err := svc.GetPermissions(ctx, 1, 10)
@@ -260,54 +274,19 @@ func TestGetPermissions(t *testing.T) {
 		assert.Len(t, got, 2)
 	})
 
-	t.Run("none authorized — returns empty", func(t *testing.T) {
+	t.Run("unauthorized — returns error", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		pr := permmocks.NewMockReader(ctrl)
 		pw := permmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		perms := []permissionsv1.Permission{
-			samplePermission("perm1"),
-			samplePermission("perm2"),
-		}
-		pr.EXPECT().GetPermissions(ctx, 1, 10).Return(perms, nil)
 		authDenied(ra)
 
 		svc := newTestService(pr, pw, ra)
 		got, err := svc.GetPermissions(ctx, 1, 10)
-		require.NoError(t, err)
-		assert.Empty(t, got)
-	})
-
-	t.Run("partial — filters unauthorized", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		pr := permmocks.NewMockReader(ctrl)
-		pw := permmocks.NewMockWriter(ctrl)
-		ra := authmocks.NewMockAuthorizer(ctrl)
-
-		allowed1 := samplePermission("allowed1")
-		denied := samplePermission("denied")
-		allowed2 := samplePermission("allowed2")
-		perms := []permissionsv1.Permission{allowed1, denied, allowed2}
-
-		pr.EXPECT().GetPermissions(ctx, 1, 10).Return(perms, nil)
-		ra.EXPECT().
-			IsAuthorizedToPerformAction(gomock.Any(), gomock.Any(), gomock.Any()).
-			DoAndReturn(func(c *authorizationv1.Context, action authorizationv1.Action, target corev1.Object) error {
-				if target.Name == "denied" {
-					return authorizationv1.ErrPermissionDenied
-				}
-				return nil
-			}).
-			AnyTimes()
-
-		svc := newTestService(pr, pw, ra)
-		got, err := svc.GetPermissions(ctx, 1, 10)
-		require.NoError(t, err)
-		assert.Len(t, got, 2)
-		for _, p := range got {
-			assert.NotEqual(t, "denied", p.Name)
-		}
+		require.Error(t, err)
+		assert.Nil(t, got)
+		assertForbidden(t, err)
 	})
 
 	t.Run("reader error propagates", func(t *testing.T) {
@@ -317,12 +296,12 @@ func TestGetPermissions(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		readerErr := errors.New("db error")
-		pr.EXPECT().GetPermissions(ctx, 1, 10).Return(nil, readerErr)
+		authAllowed(ra)
+		pr.EXPECT().GetPermissions(gomock.Any(), 1, 10).Return(nil, readerErr)
 
 		svc := newTestService(pr, pw, ra)
 		got, err := svc.GetPermissions(ctx, 1, 10)
 		require.Error(t, err)
 		assert.Nil(t, got)
-		assert.True(t, errors.Is(err, readerErr))
 	})
 }

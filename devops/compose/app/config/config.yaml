@@ -53,9 +53,7 @@ jwt:
     validity_duration_seconds: 3600
 sql:
   enabled: true
-  sql_package: SQLX
-  sql_files_dirs:
-  - /migrations/
+  sql_package: PGX
 registry:
   enabled: true
   path: /config/registry/registry.yaml

@@ -77,18 +77,12 @@ components:
       required:
       - id
       - name
-      - group
-      - kind
       - created_at
       properties:
         id:
           type: string
           format: uuid
         name:
-          type: string
-        group:
-          type: string
-        kind:
           type: string
         created_at:
           type: string
@@ -100,32 +94,21 @@ components:
       type: object
       required:
       - id
-      - resource_kind
-      - resource_group
-      - resource_name
       - created_at
       - updated_at
-      - actions
+      - permission
       properties:
         id:
           type: string
           format: uuid
-        resource_kind:
-          type: string
-        resource_group:
-          type: string
-        resource_name:
-          type: string
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
-        actions:
-          type: array
-          items:
-            type: string
+        permission:
+          type: string
     DeleteRequest:
       type: object
       required:
