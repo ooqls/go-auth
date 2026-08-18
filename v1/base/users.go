@@ -6,13 +6,13 @@ import (
 	"github.com/ooqls/getset/db/pgx"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/v1/users"
-	"github.com/ooqls/go-auth/v1/users/usersapi"
-	"github.com/ooqls/go-auth/v1/users/usersapi/gen_users"
+	usersapi "github.com/ooqls/go-auth/v1/users/api"
+	"github.com/ooqls/go-auth/v1/users/api/gen_users"
 )
 
 func NewUsersServer(ctx *app.AppContext) (gen_users.ServerInterface, error) {
 	emailCli, _ := ctx.EmailClient()
-	factory := datav1.NewFactory(*pgx.GetPGX(), nil)
+	factory := datav1.NewFactory(pgx.GetPGX(), ctx.CacheFactory())
 	service := users.NewServiceImpl(factory)
 	return usersapi.NewUsersServer(service, emailCli, ctx.L()), nil
 }
@@ -23,7 +23,7 @@ func RegisterUsersHandlers(e *gin.Engine, server gen_users.ServerInterface) {
 }
 
 func RegisterUserDocsHandler(e *gin.Engine, _ gen_users.ServerInterface) {
-	g := e.Group("api/v1/")
+	g := e.Group("api/")
 	usersapi.RegisterDocsHandler(g)
 }
 

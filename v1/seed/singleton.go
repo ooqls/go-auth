@@ -4,9 +4,6 @@ import (
 	"sync"
 
 	"github.com/ooqls/go-auth/internal/datav1"
-	"github.com/ooqls/go-auth/v1/rolebindings"
-	"github.com/ooqls/go-auth/v1/roles"
-	"github.com/ooqls/go-auth/v1/users"
 )
 
 var seedService Service
@@ -25,9 +22,5 @@ func GetSeedService() Service {
 func InitSeedService(factory datav1.Factory) {
 	m.Lock()
 	defer m.Unlock()
-	seedService = NewServiceImpl(
-		roles.GetRoleService(),
-		rolebindings.GetRoleBindingsService(),
-		users.GetUserService(),
-	)
+	seedService = NewServiceImpl(factory)
 }

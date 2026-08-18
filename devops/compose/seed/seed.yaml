@@ -1,0 +1,54 @@
+users:
+    - username: admin
+      email: admin@admin.com
+      password: admin
+      roles:
+          - name: admin
+            description: Full access to all resources
+            hierarchy: 0
+            permissions:
+                - resource:*:*:delete
+                - resource:*:*:update
+                - resource:*:*:create
+                - resource:*:*:read
+                - core:auth:user:create
+                - core:auth:user:read
+                - core:auth:user:update
+                - core:auth:user:delete
+                - core:auth:user:assign
+                - core:auth:user:unassign
+                - core:auth:user:update-key
+                - core:auth:role:create
+                - core:auth:role:read
+                - core:auth:role:update
+                - core:auth:role:delete
+                - core:auth:role:assign
+                - core:auth:role:unassign
+                - core:auth:role_binding:create
+                - core:auth:role_binding:read
+                - core:auth:role_binding:update
+                - core:auth:role_binding:delete
+                - core:auth:role_binding:assign
+                - core:auth:role_binding:unassign
+                - core:auth:resource:create
+                - core:auth:resource:read
+                - core:auth:resource:update
+                - core:auth:resource:delete
+                - core:auth:permission:create
+                - core:auth:permission:read
+                - core:auth:permission:update
+                - core:auth:permission:delete
+                - core:auth:permission:assign
+                - core:auth:permission:unassign
+                - core:auth:login_challenge:create
+                - core:auth:login_challenge:read
+                - core:auth:login_challenge:update
+                - core:auth:login_challenge:delete
+                - core:auth:challenge_attempt:create
+                - core:auth:challenge_attempt:read
+                - core:auth:challenge_attempt:update
+                - core:auth:challenge_attempt:delete
+                - core:auth:audit:create
+                - core:auth:audit:read
+                - core:auth:audit:update
+                - core:auth:audit:delete

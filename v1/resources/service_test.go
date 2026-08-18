@@ -1,10 +1,10 @@
 package resources
 
 import (
+	"context"
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
 	authmocks "github.com/ooqls/go-auth/internal/authorizationv1/mocks"
@@ -15,6 +15,7 @@ import (
 	v1 "github.com/ooqls/go-auth/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func newTestService(
@@ -26,20 +27,20 @@ func newTestService(
 }
 
 func newAuthCtx(user usersv1.User) *authorizationv1.Context {
-	ctx := authorizationv1.NewAuthorizationContext(user)
+	ctx := authorizationv1.NewAuthorizationContext(context.Background(), user)
 	return &ctx
 }
 
 func authAllowed(mock *authmocks.MockAuthorizer) {
 	mock.EXPECT().
-		IsAuthorizedToPerformAction(gomock.Any(), gomock.Any(), gomock.Any()).
+		IsAuthorizedToPerformResourceAction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil).
 		AnyTimes()
 }
 
 func authDenied(mock *authmocks.MockAuthorizer) {
 	mock.EXPECT().
-		IsAuthorizedToPerformAction(gomock.Any(), gomock.Any(), gomock.Any()).
+		IsAuthorizedToPerformResourceAction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(authorizationv1.ErrPermissionDenied).
 		AnyTimes()
 }
@@ -77,6 +78,7 @@ func TestCreateResource(t *testing.T) {
 		res := sampleResource("myresource", "mygroup", "mykind")
 		authAllowed(ra)
 		rw.EXPECT().CreateResource(gomock.Any(), "mygroup", "mykind", "myresource").Return(res, nil)
+		rr.EXPECT().ClearCache(gomock.Any()).Return(nil)
 
 		svc := newTestService(rr, rw, ra)
 		got, err := svc.CreateResource(ctx, "mygroup", "mykind", "myresource")
@@ -294,23 +296,25 @@ func TestGetResources(t *testing.T) {
 	user := sampleUser("testuser")
 	ctx := newAuthCtx(user)
 
+	makeResult := func(items ...resourcesv1.Resourcev1) *corev1.Result[[]resourcesv1.Resourcev1] {
+		return &corev1.Result[[]resourcesv1.Resourcev1]{Items: items, TotalCount: int64(len(items))}
+	}
+
 	t.Run("group and kind — dispatches to GetResourcesByGroupAndKind", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		rr := resmocks.NewMockReader(ctrl)
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		resources := []resourcesv1.Resourcev1{
-			*sampleResource("res1", "mygroup", "mykind"),
-			*sampleResource("res2", "mygroup", "mykind"),
-		}
 		authAllowed(ra)
-		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), "mygroup", "mykind", int32(10), int32(0)).Return(resources, nil)
+		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), "mygroup", "mykind", int32(10), int32(0)).
+			Return(makeResult(*sampleResource("res1", "mygroup", "mykind"), *sampleResource("res2", "mygroup", "mykind")), nil)
 
 		svc := newTestService(rr, rw, ra)
 		got, err := svc.GetResources(ctx, strPtr("mygroup"), strPtr("mykind"), 1, 10)
 		require.NoError(t, err)
-		assert.Len(t, got, 2)
+		assert.Len(t, got.Items, 2)
+		assert.Equal(t, int64(2), got.TotalCount)
 	})
 
 	t.Run("group only — dispatches to GetResourcesByGroup", func(t *testing.T) {
@@ -319,16 +323,14 @@ func TestGetResources(t *testing.T) {
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		resources := []resourcesv1.Resourcev1{
-			*sampleResource("res1", "mygroup", "kind1"),
-		}
 		authAllowed(ra)
-		rr.EXPECT().GetResourcesByGroup(gomock.Any(), "mygroup", int32(10), int32(0)).Return(resources, nil)
+		rr.EXPECT().GetResourcesByGroup(gomock.Any(), "mygroup", int32(10), int32(0)).
+			Return(makeResult(*sampleResource("res1", "mygroup", "kind1")), nil)
 
 		svc := newTestService(rr, rw, ra)
 		got, err := svc.GetResources(ctx, strPtr("mygroup"), nil, 1, 10)
 		require.NoError(t, err)
-		assert.Len(t, got, 1)
+		assert.Len(t, got.Items, 1)
 	})
 
 	t.Run("no filter — dispatches to GetResources", func(t *testing.T) {
@@ -337,16 +339,14 @@ func TestGetResources(t *testing.T) {
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		resources := []resourcesv1.Resourcev1{
-			*sampleResource("res1", "g1", "k1"),
-		}
 		authAllowed(ra)
-		rr.EXPECT().GetResources(gomock.Any(), int32(10), int32(0)).Return(resources, nil)
+		rr.EXPECT().GetResources(gomock.Any(), int32(10), int32(0)).
+			Return(makeResult(*sampleResource("res1", "g1", "k1")), nil)
 
 		svc := newTestService(rr, rw, ra)
 		got, err := svc.GetResources(ctx, nil, nil, 1, 10)
 		require.NoError(t, err)
-		assert.Len(t, got, 1)
+		assert.Len(t, got.Items, 1)
 	})
 
 	t.Run("unauthorized — returns error", func(t *testing.T) {
@@ -370,7 +370,8 @@ func TestGetResources(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		authAllowed(ra)
-		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
+		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(nil, errors.New("db error"))
 
 		svc := newTestService(rr, rw, ra)
 		got, err := svc.GetResources(ctx, strPtr("mygroup"), strPtr("mykind"), 1, 10)

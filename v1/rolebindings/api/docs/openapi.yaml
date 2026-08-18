@@ -1,0 +1,193 @@
+openapi: 3.0.3
+servers:
+  - url: http://localhost:8080/rolebindings/api/v1
+    description: Local server
+  - url: http://auth:8080/api/v1
+  - url: https://localhost:8080/rolebindings/api/v1
+  - url: https://rolebindings:8080/api/v1
+info:
+  title: Role Bindings API
+  description: Manages assignments of roles to users.
+  version: 1.0.0
+security:
+  - cookieAuth: []
+paths:
+  /role_bindings/{userID}:
+    get:
+      operationId: GetRolebindingsForUser
+      summary: Get all role bindings for a user
+      description: Returns all role assignments for the specified user.
+      parameters:
+        - name: userID
+          in: path
+          required: true
+          description: The UUID of the user whose role bindings to retrieve.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully retrieved role bindings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleBinding'
+        '403':
+          description: The caller is not authorized to view this user's role bindings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No user found with the given ID.
+  /role_bindings:
+    post:
+      operationId: AssignRole
+      summary: Assign roles to users
+      description: Creates role bindings between the specified users and roles.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRoleRequest'
+      responses:
+        '200':
+          description: Roles assigned successfully.
+        '403':
+          description: The caller is not authorized to assign roles.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: One or more specified users or roles were not found.
+    delete:
+      operationId: UnassignRole
+      summary: Remove role assignments from users
+      description: Removes role bindings between the specified users and roles.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnassignRoleRequest'
+      responses:
+        '200':
+          description: Role bindings removed successfully.
+        '403':
+          description: The caller is not authorized to remove role bindings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: One or more specified users or roles were not found.
+    get:
+      operationId: GetAllRoleBindings
+      summary: List all role bindings
+      description: Returns a paginated list of all role bindings in the system.
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: The page number to retrieve (1-indexed).
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          description: The number of results per page.
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Successfully retrieved role bindings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleBinding'
+        '403':
+          description: The caller is not authorized to list role bindings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: OKEY
+  schemas:
+    AssignRoleRequest:
+      type: object
+      description: Request body for assigning one or more roles to one or more users.
+      required:
+        - userIDs
+        - roleIDs
+      properties:
+        userIDs:
+          type: array
+          description: The UUIDs of the users to assign roles to.
+          items:
+            type: string
+            format: uuid
+        roleIDs:
+          type: array
+          description: The UUIDs of the roles to assign.
+          items:
+            type: string
+            format: uuid
+    UnassignRoleRequest:
+      type: object
+      description: Request body for removing one or more role assignments from one or more users.
+      required:
+        - userIDs
+        - roleIDs
+      properties:
+        userIDs:
+          type: array
+          description: The UUIDs of the users to remove role assignments from.
+          items:
+            type: string
+            format: uuid
+        roleIDs:
+          type: array
+          description: The UUIDs of the roles to remove.
+          items:
+            type: string
+            format: uuid
+    RoleBinding:
+      type: object
+      description: Represents an assignment of a role to a user.
+      properties:
+        roleID:
+          type: string
+          format: uuid
+          description: The UUID of the assigned role.
+        userID:
+          type: string
+          format: uuid
+          description: The UUID of the user the role is assigned to.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the binding was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the binding was last updated.
+    ErrorResponse:
+      type: object
+      description: A standard error response body.
+      properties:
+        message:
+          type: string
+          description: A human-readable description of the error.

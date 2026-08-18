@@ -1,0 +1,243 @@
+openapi: 3.0.0
+servers:
+    - url: https://localhost:8080/resources/api/v1
+      description: Local server
+    - url: https://resources:8080/api/v1
+    - url: http://localhost:8080/resources/api/v1
+    - url: http://resources:8080/api/v1
+info:
+    title: Authorization Resources
+    version: 1.0.0
+security:
+    - cookieAuth: []
+components:
+    securitySchemes:
+        cookieAuth:
+            type: apiKey
+            in: cookie
+            name: OKEY
+    schemas:
+        ResourceList:
+            type: object
+            required:
+                - items
+                - total_count
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: "schemas.yaml#/components/schemas/Resource"
+                total_count:
+                    type: integer
+        UpdateResource:
+            type: object
+            required:
+                - name
+                - group
+                - kind
+                - newName
+            properties:
+                name:
+                    type: string
+                group:
+                    type: string
+                kind:
+                    type: string
+                newName:
+                    type: string
+        CreateResourceRequest:
+            type: object
+            required:
+                - resource
+            properties:
+                resource:
+                    $ref: "schemas.yaml#/components/schemas/Resource"
+        CreatedResource:
+            type: object
+            required:
+                - resource
+            properties:
+                resource:
+                    $ref: "schemas.yaml#/components/schemas/Resource"
+        ResourceSearch:
+            type: object
+            properties:
+                group:
+                    type: string
+                kind:
+                    type: string
+                name:
+                    type: string
+                query:
+                    type: string
+paths:
+    /resource/{group}/{kind}/{name}:
+        get:
+            summary: Get a resource
+            description: Get a resource
+            operationId: getResource
+            parameters:
+                - name: group
+                  in: path
+                  description: The group of the resource
+                  required: true
+                  schema:
+                      type: string
+                - name: kind
+                  in: path
+                  description: The kind of the resource
+                  required: true
+                  schema:
+                      type: string
+                - name: name
+                  in: path
+                  description: The name of the resource
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Successful resource retrieval
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "schemas.yaml#/components/schemas/Resource"
+                "401":
+                    description: Invalid credentials
+                "404":
+                    description: Resource not found
+        delete:
+            summary: Delete a resource
+            description: Delete a resource
+            operationId: deleteResource
+            parameters:
+                - name: group
+                  in: path
+                  description: The group of the resource
+                  required: true
+                  schema:
+                      type: string
+                - name: kind
+                  in: path
+                  description: The kind of the resource
+                  required: true
+                  schema:
+                      type: string
+                - name: name
+                  in: path
+                  description: The name of the resource
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Successful resource deletion
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "schemas.yaml#/components/schemas/DeleteResponse"
+                "401":
+                    description: Invalid credentials
+                "404":
+                    description: Resource not found
+    /resource/search:
+        post:
+            summary: Search all resources
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/ResourceSearch"
+            responses:
+                "200":
+                    description: Successful resource search
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceList"
+                "400":
+                    description: invalid request
+                "403":
+                    description: forbidden
+                "401":
+                    description: unauthorized
+    /resource:
+        get:
+            summary: Get all resources
+            description: Get all resources
+            operationId: listResources
+            parameters:
+                - name: group
+                  in: query
+                  description: The group of the resources
+                  required: false
+                  schema:
+                      type: string
+                - name: kind
+                  in: query
+                  description: The kind of the resources
+                  required: false
+                  schema:
+                      type: string
+                - name: page
+                  in: query
+                  description: The page number
+                  required: false
+                  schema:
+                      type: integer
+                - name: page_size
+                  in: query
+                  description: The page size
+                  required: false
+                  schema:
+                      type: integer
+                - name: name
+                  in: query
+                  description: The name of the resource
+                  required: false
+                  schema:
+                      type: string
+            responses:
+                "200":
+                    description: Successful resource retrieval
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ResourceList"
+                "401":
+                    description: Invalid credentials
+        post:
+            operationId: createResource
+            summary: Create a resource
+            description: Create a resource
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateResourceRequest"
+                required: true
+            responses:
+                "200":
+                    description: Successful resource creation
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/CreatedResource"
+                "401":
+                    description: Invalid credentials
+        put:
+            operationId: updateResource
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateResource"
+            responses:
+                "200":
+                    description: Successful resource update
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "schemas.yaml#/components/schemas/Resource"
+                "401":
+                    description: Invalid credentials

@@ -1,6 +1,6 @@
 package rolebindingsv1
 
-//go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
 
 import (
 	"database/sql"

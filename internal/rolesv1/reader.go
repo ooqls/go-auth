@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/go-auth/internal/contexts"
+	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/rolesv1/datagen"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -15,10 +16,10 @@ import (
 
 var _ Reader = &SQLRoleReader{}
 
-//go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_role_reader.go -package=mocks -mock_names=RoleReader=MockRoleReader
+//go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_role_reader.go -package=mocks -mock_names=RoleReader=MockRoleReader
 type Reader interface {
 	GetRole(ctx contexts.LContext, id uuid.UUID) (*Role, error)
-	GetRoles(ctx contexts.LContext, limit, offset int32) ([]Role, error)
+	GetRoles(ctx contexts.LContext, limit, offset int32) (*corev1.Result[[]Role], error)
 	// GetRolesForUser(ctx contexts.LContext, userId uuid.UUID) ([]datagen.Rolesv1, error)
 	GetRoleByName(ctx contexts.LContext, name string) (*Role, error)
 	ClearCache(ctx context.Context) error
@@ -41,7 +42,7 @@ func (r *SQLRoleReader) GetRole(ctx contexts.LContext, id uuid.UUID) (*Role, err
 
 	cachedRole := r.getCache(ctx, cacheKey)
 	if cachedRole != nil {
-		return &cachedRole[0], nil
+		return &cachedRole.Items[0], nil
 	}
 
 	qRole, err := r.q.GetRole(ctx, id)
@@ -55,7 +56,7 @@ func (r *SQLRoleReader) GetRole(ctx contexts.LContext, id uuid.UUID) (*Role, err
 	role := FromDatagenRole(qRole)
 
 	if r.cache != nil {
-		err = r.cache.Set(ctx, cacheKey, []Role{role})
+		err = r.cache.Set(ctx, cacheKey, corev1.Result[[]Role]{Items: []Role{role}})
 		if err != nil {
 			ctx.L().Error("failed to set cache", zap.Error(err))
 		}
@@ -64,7 +65,7 @@ func (r *SQLRoleReader) GetRole(ctx contexts.LContext, id uuid.UUID) (*Role, err
 	return &role, nil
 }
 
-func (r *SQLRoleReader) GetRoles(ctx contexts.LContext, limit, offset int32) ([]Role, error) {
+func (r *SQLRoleReader) GetRoles(ctx contexts.LContext, limit, offset int32) (*corev1.Result[[]Role], error) {
 	cacheKey := fmt.Sprintf("roles:%d:%d", limit, offset)
 
 	cachedRoles := r.getCache(ctx, cacheKey)
@@ -84,14 +85,22 @@ func (r *SQLRoleReader) GetRoles(ctx contexts.LContext, limit, offset int32) ([]
 		roles = append(roles, FromDatagenRole(role))
 	}
 
+	count, err := r.q.CountRoles(ctx)
+	if err != nil {
+		ctx.L().Warn("failed to count roles")
+		count = -1
+	}
+
+	res := &corev1.Result[[]Role]{Items: roles, TotalCount: count}
+
 	if r.cache != nil {
-		err = r.cache.Set(ctx, cacheKey, roles)
+		err = r.cache.Set(ctx, cacheKey, res)
 		if err != nil {
 			ctx.L().Error("failed to set cache", zap.Error(err))
 		}
 	}
 
-	return roles, nil
+	return res, nil
 }
 
 // func (r *SQLRoleReader) GetRolesForUser(ctx context.LContext, userId uuid.UUID) ([]datagen.Rolesv1, error) {
@@ -135,7 +144,7 @@ func (r *SQLRoleReader) GetRoleByName(ctx contexts.LContext, name string) (*Role
 
 	cachedRoles := r.getCache(ctx, cacheKey)
 	if cachedRoles != nil {
-		return &cachedRoles[0], nil
+		return &cachedRoles.Items[0], nil
 	}
 
 	qrole, err := r.q.GetRolesByName(ctx, name)
@@ -156,16 +165,16 @@ func (r *SQLRoleReader) GetRoleByName(ctx contexts.LContext, name string) (*Role
 	return &role, nil
 }
 
-func (r *SQLRoleReader) getCache(ctx contexts.LContext, keys ...string) []Role {
+func (r *SQLRoleReader) getCache(ctx contexts.LContext, keys ...string) *corev1.Result[[]Role] {
 	if r.cache == nil {
 		return nil
 	}
 
 	for _, key := range keys {
-		var roles []Role
+		var roles corev1.Result[[]Role]
 		err := r.cache.Get(ctx, key, &roles)
-		if err == nil && len(roles) > 0 {
-			return roles
+		if err == nil && len(roles.Items) > 0 {
+			return &roles
 		}
 
 		if err != nil && !cache.IsCacheMissErr(err) {

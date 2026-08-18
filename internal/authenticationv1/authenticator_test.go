@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/ooqls/getset/cache/factory"
 	"github.com/ooqls/getset/cache/store"
@@ -73,7 +73,7 @@ func TestAuthenticator_Challenge(t *testing.T) {
 
 		user := &usersv1.User{
 			Object: corev1.Object{
-				Metadata: usersv1.Metadata,
+				Metadata: corev1.UsersV1,
 				Id:       uuid.New(),
 			},
 			Username: "test",

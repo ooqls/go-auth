@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"embed"
 	"io/fs"
+	"mime"
 	"net/http"
+	"path"
 	"text/template"
 
 	"github.com/gin-gonic/gin"
@@ -37,7 +39,9 @@ var indexTmpl = template.Must(template.New("index").Parse(`<!DOCTYPE html>
 
 // RegisterDocsHandler mounts a Swagger UI at /docs/ on the given router.
 // title is shown in the browser tab.
-// openapiFS must contain openapi.yaml at its root.
+// openapiFS must contain openapi.yaml at its root. Any other files at the root
+// (e.g. schemas.yaml referenced via external $ref) are served alongside it so
+// Swagger UI can resolve those references.
 func RegisterDocsHandler(e gin.IRouter, title string, openapiFS fs.FS) {
 	var buf bytes.Buffer
 	if err := indexTmpl.Execute(&buf, struct{ Title string }{title}); err != nil {
@@ -54,15 +58,35 @@ func RegisterDocsHandler(e gin.IRouter, title string, openapiFS fs.FS) {
 		c.Data(http.StatusOK, "text/html; charset=utf-8", indexHTML)
 	})
 
-	e.GET("/docs/openapi.yaml", func(c *gin.Context) {
-		f, err := openapiFS.Open("openapi.yaml")
-		if err != nil {
-			c.Status(http.StatusNotFound)
-			return
+	// Serve every file at the root of openapiFS (openapi.yaml plus any
+	// externally-referenced specs such as schemas.yaml).
+	entries, err := fs.ReadDir(openapiFS, ".")
+	if err != nil {
+		panic(err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
 		}
-		defer f.Close()
-		c.DataFromReader(http.StatusOK, -1, "application/yaml", f, nil)
-	})
+		name := entry.Name()
+		contentType := mime.TypeByExtension(path.Ext(name))
+		switch path.Ext(name) {
+		case ".yaml", ".yml":
+			contentType = "application/yaml"
+		}
+		if contentType == "" {
+			contentType = "application/octet-stream"
+		}
+		e.GET("/docs/"+name, func(c *gin.Context) {
+			f, err := openapiFS.Open(name)
+			if err != nil {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			defer f.Close()
+			c.DataFromReader(http.StatusOK, -1, contentType, f, nil)
+		})
+	}
 
 	e.StaticFS("/docs/assets", http.FS(assets))
 

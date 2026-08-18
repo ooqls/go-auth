@@ -1,6 +1,7 @@
 package authenticationv1
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -62,6 +63,7 @@ func NewAuthenticatorV1(
 func (a *AuthenticatorV1) ValidateRegistration(ctx contexts.LContext, reg Registration) ([crypto.SALT_SIZE]byte, error) {
 	l := l.With(zap.String("username", reg.Username))
 
+	l.Info("validating registration")
 	salt, err := a.challenger.VerifyRegistration(ctx, reg.Username, reg.Secret, reg.Key)
 	if err != nil {
 		l.Error("failed to verify registration", zap.Error(err))
@@ -73,10 +75,12 @@ func (a *AuthenticatorV1) ValidateRegistration(ctx contexts.LContext, reg Regist
 
 // returns the auth token, refresh token and any errors
 func (a *AuthenticatorV1) AuthenticateWithToken(ctx contexts.LContext, authToken string) (*TokenResponse, error) {
-	if authToken == "" || len(authToken) > 1024 {
+	ctx.L().Info("authenticating with token")
+	if authToken == "" || len(authToken) > 2048 {
 		return nil, ErrInvalidToken
 	}
 
+	ctx.L().Info("getting auth token claims")
 	claims, err := a.getAuthTokenAuthentication(ctx, authToken)
 	if err != nil {
 		l.Error("failed to get user authentication", zap.Error(err))
@@ -91,7 +95,7 @@ func (a *AuthenticatorV1) AuthenticateWithToken(ctx contexts.LContext, authToken
 // ChallengeRequest will issue a challenge for the given user
 // Returns a challenge, and any errors
 func (a *AuthenticatorV1) ChallengeRequest(ctx contexts.LContext, user *usersv1.User) (*Challenge, error) {
-
+	ctx.L().Info("issuing challenge", zap.String("user_id", user.Id.String()))
 	challenge, err := a.challenger.IssueChallenge(ctx, user)
 	if err != nil {
 		return nil, err
@@ -103,21 +107,25 @@ func (a *AuthenticatorV1) ChallengeRequest(ctx contexts.LContext, user *usersv1.
 // ChallengeResponse will verify the user's challenge response
 // Returns the auth token, refresh token, user id, and any errors
 func (a *AuthenticatorV1) ChallengeResponse(ctx contexts.LContext, challengeId uuid.UUID, solvedChallenge []byte) (okey string, rkey string, uid string, err error) {
+	ctx.L().Info("verifying challenge response", zap.String("challenge_id", challengeId.String()))
 	result, err := a.challenger.VerifyChallenge(ctx, challengeId, solvedChallenge)
 	if err != nil {
 		return "", "", "", err
 	}
 
+	ctx.L().Info("challenge verified, issuing tokens", zap.String("challenge_id", challengeId.String()), zap.String("user_id", result.User.Id.String()))
 	userData, err := json.Marshal(result.User)
 	if err != nil {
 		return "", "", "", err
 	}
-	
+
+	ctx.L().Info("issuing auth token", zap.String("user_id", result.User.Id.String()))
 	authToken, err := a.issueNewAuthToken(ctx, result.User.Id, userData)
 	if err != nil {
 		return "", "", "", err
 	}
 
+	ctx.L().Info("issuing refresh token", zap.String("user_id", result.User.Id.String()))
 	refreshToken, err := a.issueNewRefreshToken(ctx, result.User.Id, userData)
 	if err != nil {
 		return "", "", "", err
@@ -202,7 +210,9 @@ func (a *AuthenticatorV1) issueNewRefreshToken(ctx contexts.LContext, id uuid.UU
 
 func (a *AuthenticatorV1) getRefreshTokenAuthentication(ctx contexts.LContext, token string) (*claims.UserClaims, error) {
 	var cachedClaims claims.UserClaims
-	err := a.tokenCache.Get(ctx, token, &cachedClaims)
+	cacheCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	err := a.tokenCache.Get(cacheCtx, token, &cachedClaims)
 	if err != nil && err != redis.Nil {
 		l.Error("failed to get user authentication from cache", zap.Error(err))
 	}
@@ -222,7 +232,9 @@ func (a *AuthenticatorV1) getRefreshTokenAuthentication(ctx contexts.LContext, t
 		return nil, ErrInvalidToken
 	}
 
-	err = a.tokenCache.Set(ctx, token, claims)
+	setCtx, setCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer setCancel()
+	err = a.tokenCache.Set(setCtx, token, claims)
 	if err != nil {
 		l.Error("failed to set user authentication in cache", zap.Error(err))
 	}
@@ -233,7 +245,9 @@ func (a *AuthenticatorV1) getRefreshTokenAuthentication(ctx contexts.LContext, t
 func (a *AuthenticatorV1) getAuthTokenAuthentication(ctx contexts.LContext, token string) (*claims.UserClaims, error) {
 	var cachedClaims claims.UserClaims
 	ctx.L().Debug("checking token cache for auth token", zap.String("token", token))
-	err := a.tokenCache.Get(ctx, token, &cachedClaims)
+	cacheCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	err := a.tokenCache.Get(cacheCtx, token, &cachedClaims)
 	if err != nil && !cache.IsCacheMissErr(err) {
 		ctx.L().Error("failed to get user authentication from cache", zap.Error(err))
 	}
@@ -255,7 +269,9 @@ func (a *AuthenticatorV1) getAuthTokenAuthentication(ctx contexts.LContext, toke
 	}
 
 	ctx.L().Debug("storing auth token in cache", zap.String("token", token))
-	err = a.tokenCache.Set(ctx, token, claims)
+	setCtx, setCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer setCancel()
+	err = a.tokenCache.Set(setCtx, token, claims)
 	if err != nil {
 		ctx.L().Error("failed to set user authentication in cache", zap.Error(err))
 	}

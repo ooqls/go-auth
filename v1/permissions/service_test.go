@@ -1,13 +1,15 @@
 package permissions
 
 import (
+	"context"
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
 	authmocks "github.com/ooqls/go-auth/internal/authorizationv1/mocks"
+	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/permissionsv1"
 	permmocks "github.com/ooqls/go-auth/internal/permissionsv1/mocks"
 	"github.com/ooqls/go-auth/internal/usersv1"
@@ -15,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
 
 func newTestService(
 	pr permissionsv1.Reader,
@@ -25,27 +28,27 @@ func newTestService(
 }
 
 func newAuthCtx(user usersv1.User) *authorizationv1.Context {
-	ctx := authorizationv1.NewAuthorizationContext(user)
+	ctx := authorizationv1.NewAuthorizationContext(context.Background(), user)
 	return &ctx
 }
 
 func authAllowed(mock *authmocks.MockAuthorizer) {
 	mock.EXPECT().
-		IsAuthorizedToPerformAction(gomock.Any(), gomock.Any(), gomock.Any()).
+		IsAuthorizedToPerformCoreAction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(nil).
 		AnyTimes()
 }
 
 func authDenied(mock *authmocks.MockAuthorizer) {
 	mock.EXPECT().
-		IsAuthorizedToPerformAction(gomock.Any(), gomock.Any(), gomock.Any()).
+		IsAuthorizedToPerformCoreAction(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 		Return(authorizationv1.ErrPermissionDenied).
 		AnyTimes()
 }
 
 func samplePermission(name string) permissionsv1.Permission {
 	return permissionsv1.Permission{
-		Metadata:   permissionsv1.Metadata,
+		Metadata:   corev1.PermissionsV1,
 		Permission: name,
 	}
 }
@@ -266,12 +269,15 @@ func TestGetPermissions(t *testing.T) {
 			samplePermission("perm2"),
 		}
 		authAllowed(ra)
-		pr.EXPECT().GetPermissions(gomock.Any(), 1, 10).Return(perms, nil)
+		pr.EXPECT().GetPermissions(gomock.Any(), 1, 10).Return(
+			&corev1.Result[[]permissionsv1.Permission]{Items: perms, TotalCount: 2}, nil,
+		)
 
 		svc := newTestService(pr, pw, ra)
 		got, err := svc.GetPermissions(ctx, 1, 10)
 		require.NoError(t, err)
-		assert.Len(t, got, 2)
+		assert.Len(t, got.Items, 2)
+		assert.Equal(t, int64(2), got.TotalCount)
 	})
 
 	t.Run("unauthorized — returns error", func(t *testing.T) {

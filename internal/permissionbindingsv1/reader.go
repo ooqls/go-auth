@@ -1,6 +1,6 @@
 package permissionbindingsv1
 
-//go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/go-auth/internal/contexts"
+	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/permissionbindingsv1/datagen"
 	"go.uber.org/zap"
 )
@@ -43,7 +44,7 @@ func (r *SQLReader) GetPermissionBindingsForRole(ctx contexts.LContext, roleId u
 
 	for _, item := range items {
 		bindings = append(bindings, Permissionbindingv1{
-			Metadata:     Metadata,
+			Metadata:     corev1.PermissionBindingsV1,
 			RoleID:       item.RoleID,
 			Permission: item.Permission,
 		})
@@ -71,7 +72,7 @@ func (r *SQLReader) GetPermissionsBindings(ctx contexts.LContext, page, pageSize
 	var bindings []Permissionbindingv1
 	for _, item := range items {
 		bindings = append(bindings, Permissionbindingv1{
-			Metadata:     Metadata,
+			Metadata:     corev1.PermissionBindingsV1,
 			RoleID:       item.RoleID,
 			Permission: item.Permission,
 		})

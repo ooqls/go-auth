@@ -12,6 +12,44 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAllResources = `-- name: CountAllResources :one
+SELECT COUNT(*) FROM resourcesv1
+`
+
+func (q *Queries) CountAllResources(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countAllResources)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countResources = `-- name: CountResources :one
+SELECT COUNT(*) FROM resourcesv1 WHERE rGroup = $1 AND kind = $2
+`
+
+type CountResourcesParams struct {
+	Rgroup string
+	Kind   string
+}
+
+func (q *Queries) CountResources(ctx context.Context, arg CountResourcesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countResources, arg.Rgroup, arg.Kind)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countResourcesByGroup = `-- name: CountResourcesByGroup :one
+SELECT COUNT(*) FROM resourcesv1 WHERE rGroup = $1
+`
+
+func (q *Queries) CountResourcesByGroup(ctx context.Context, rgroup string) (int64, error) {
+	row := q.db.QueryRow(ctx, countResourcesByGroup, rgroup)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createResource = `-- name: CreateResource :one
 INSERT INTO resourcesv1 (
   name,
@@ -240,6 +278,87 @@ func (q *Queries) GetResourcesByGroupAndKind(ctx context.Context, arg GetResourc
 		return nil, err
 	}
 	return items, nil
+}
+
+const searchResources = `-- name: SearchResources :many
+SELECT id, name, rgroup, kind, description, created_at, updated_at FROM resourcesv1
+WHERE (rGroup = $1 OR $1 IS NULL)
+  AND (kind = $2 OR $2 IS NULL)
+  AND (name = $3 OR $3 IS NULL)
+  AND ($4::text IS NULL OR name ILIKE '%' || $4 || '%')
+ORDER BY name
+LIMIT $5 OFFSET $6
+`
+
+type SearchResourcesParams struct {
+	Rgroup pgtype.Text
+	Kind   pgtype.Text
+	Name   pgtype.Text
+	Query  pgtype.Text
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) SearchResources(ctx context.Context, arg SearchResourcesParams) ([]Resourcesv1, error) {
+	rows, err := q.db.Query(ctx, searchResources,
+		arg.Rgroup,
+		arg.Kind,
+		arg.Name,
+		arg.Query,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Resourcesv1
+	for rows.Next() {
+		var i Resourcesv1
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Rgroup,
+			&i.Kind,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countSearchResources = `-- name: CountSearchResources :one
+SELECT COUNT(*) FROM resourcesv1
+WHERE (rGroup = $1 OR $1 IS NULL)
+  AND (kind = $2 OR $2 IS NULL)
+  AND (name = $3 OR $3 IS NULL)
+  AND ($4::text IS NULL OR name ILIKE '%' || $4 || '%')
+`
+
+type CountSearchResourcesParams struct {
+	Rgroup pgtype.Text
+	Kind   pgtype.Text
+	Name   pgtype.Text
+	Query  pgtype.Text
+}
+
+func (q *Queries) CountSearchResources(ctx context.Context, arg CountSearchResourcesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countSearchResources,
+		arg.Rgroup,
+		arg.Kind,
+		arg.Name,
+		arg.Query,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const updateResource = `-- name: UpdateResource :one

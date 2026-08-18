@@ -1,0 +1,328 @@
+package rolesapi
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/ooqls/go-auth/internal/authorizationv1"
+	v1 "github.com/ooqls/go-auth/v1"
+	"github.com/ooqls/go-auth/v1/permissionbindings"
+	"github.com/ooqls/go-auth/v1/permissions"
+	"github.com/ooqls/go-auth/v1/rolebindings"
+	"github.com/ooqls/go-auth/v1/roles"
+	"github.com/ooqls/go-auth/v1/roles/api/gen_roles"
+
+	"go.uber.org/zap"
+)
+
+var _ gen_roles.ServerInterface = &RolesServer{}
+
+type RolesServer struct {
+	service           roles.Service
+	rbService         rolebindings.Service
+	permissionService permissions.Service
+	permissionBinding permissionbindings.Service
+	l                 *zap.Logger
+}
+
+func NewRolesServer(
+	service roles.Service,
+	pbService permissionbindings.Service,
+	rbService rolebindings.Service,
+	permissionService permissions.Service,
+	l *zap.Logger,
+) *RolesServer {
+	return &RolesServer{
+		service:           service,
+		rbService:         rbService,
+		permissionService: permissionService,
+		permissionBinding: pbService,
+		l:                 l,
+	}
+}
+func (r *RolesServer) UpdateRoleBindings(ctx *gin.Context) {
+	var updateReq gen_roles.RoleBindingRequest
+	if err := ctx.ShouldBindJSON(&updateReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+	if updateReq.AssignRoleIds == nil && updateReq.UnassignRoleIds == nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "AssignRoleIds and UnassignRoleIds cannot both be nil"})
+		return
+	}
+
+	if updateReq.AssignRoleIds != nil {
+		for _, roleId := range *updateReq.AssignRoleIds {
+			err := r.rbService.AssignRoleToUser(authCtx, authCtx.User.Id, roleId)
+			if err != nil {
+				v1.GinHandleError(ctx, err)
+				return
+			}
+		}
+	}
+
+	if updateReq.UnassignRoleIds != nil {
+		for _, roleId := range *updateReq.UnassignRoleIds {
+			err := r.rbService.UnassignRoleFromUser(authCtx, authCtx.User.Id, roleId)
+			if err != nil {
+				v1.GinHandleError(ctx, err)
+				return
+			}
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Role bindings updated successfully"})
+}
+func (r *RolesServer) CreateAuthRole(ctx *gin.Context) {
+	var createReq gen_roles.CreateAuthRoleJSONRequestBody
+	if err := ctx.ShouldBindJSON(&createReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+	roleId, err := r.service.CreateRole(authCtx, createReq.Name, createReq.Description, int32(createReq.Hierarchy))
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"message": "Role created successfully", "id": roleId})
+}
+
+func (r *RolesServer) DeleteAuthRole(ctx *gin.Context) {
+	var deleteReq gen_roles.DeleteAuthRoleJSONRequestBody
+	if err := ctx.ShouldBindJSON(&deleteReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+
+	err := r.service.DeleteRole(authCtx, deleteReq.Id)
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	// Silence unused variable warning
+	_ = authCtx
+
+	ctx.JSON(http.StatusNoContent, gin.H{"message": "Role deleted successfully"})
+}
+
+func (r *RolesServer) GetAuthRole(ctx *gin.Context, id uuid.UUID) {
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+
+	role, err := r.service.GetRole(authCtx, id)
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	if role == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Role not found"})
+		return
+	}
+
+	genRole := toGenRole(*role)
+	ctx.JSON(http.StatusOK, gen_roles.GetAuthRoleResponse{
+		JSON200: &genRole,
+	})
+}
+
+func (r *RolesServer) GetAuthRoles(ctx *gin.Context, params gen_roles.GetAuthRolesParams) {
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+
+	page := int32(1)
+	pageSize := int32(100)
+	if params.Page != nil {
+		page = int32(*params.Page)
+	}
+	if params.PageSize != nil {
+		pageSize = int32(*params.PageSize)
+	}
+
+	roleList, err := r.service.ListRoles(authCtx, page, pageSize)
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gen_roles.RolesList{
+		Items:      toGenRoleList(roleList.Items),
+		TotalCount: int(roleList.TotalCount),
+	})
+}
+
+func (r *RolesServer) UpdateAuthRole(ctx *gin.Context) {
+	var updateReq gen_roles.UpdateRoleRequest
+	if err := ctx.ShouldBindJSON(&updateReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+
+	role, err := r.service.GetRole(authCtx, updateReq.Id)
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	if role == nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Role not found"})
+		return
+	}
+
+	var nHierarchy *int32
+	if updateReq.Hierarchy != nil {
+		h := int32(*updateReq.Hierarchy)
+		nHierarchy = &h
+	}
+
+	err = r.service.UpdateRole(authCtx, updateReq.Id, updateReq.Name, updateReq.Description, nHierarchy)
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	// Silence unused variable warning
+	_ = authCtx
+
+	ctx.JSON(http.StatusNoContent, gin.H{"message": "Role updated successfully"})
+}
+
+// func (r *RolesServer) GetAuthPermissions(ctx *gin.Context, params gen_roles.GetAuthPermissionsParams) {
+// 	authCtx, ok := authorizationv1.FromGinContext(ctx)
+// 	if !ok {
+// 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+// 		return
+// 	}
+
+// 	page := 0
+// 	pageSize := 100
+// 	if params.Page != nil {
+// 		page = *params.Page
+// 	}
+// 	if params.PageSize != nil {
+// 		pageSize = *params.PageSize
+// 	}
+
+// 	perms, err := r.permissionService.GetPermissions(authCtx, page, pageSize)
+// 	if err != nil {
+// 		v1.GinHandleError(ctx, err)
+// 		return
+// 	}
+
+// 	genPerms := make([]gen.Permission, 0, len(perms))
+// 	for _, p := range perms {
+// 		genPerms = append(genPerms, gen.Permission{
+// 			Id:            p.Id,
+// 		})
+// 	}
+
+// 	ctx.JSON(http.StatusOK, genPerms)
+// }
+
+// func (r *RolesServer) CreateAuthPermission(ctx *gin.Context) {
+// 	var createReq gen_roles.CreateAuthPermissionJSONRequestBody
+// 	if err := ctx.ShouldBindJSON(&createReq); err != nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	authCtx, ok := authorizationv1.FromGinContext(ctx)
+// 	if !ok {
+// 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+// 		return
+// 	}
+
+// 	if createReq.Permissions == nil {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "permissions are required"})
+// 		return
+// 	}
+
+// 	for _, p := range *createReq.Permissions {
+// 		if err := r.permissionService.AddPermission(authCtx, p.ResourceName, p.ResourceGroup, p.ResourceKind, p.Actions); err != nil {
+// 			v1.GinHandleError(ctx, err)
+// 			return
+// 		}
+// 	}
+
+// 	ctx.JSON(http.StatusCreated, gin.H{"message": "Permissions created successfully"})
+// }
+
+func (r *RolesServer) AssignRolePermissions(ctx *gin.Context) {
+	var addReq gen_roles.AssignRolePermissionsJSONRequestBody
+	if err := ctx.ShouldBindJSON(&addReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+
+	roleIds := *addReq.RoleId
+	permissions := *addReq.Permissions
+	err := r.permissionBinding.AssignPermission(authCtx, []uuid.UUID{roleIds}, permissions)
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Permissions added successfully"})
+}
+
+func (r *RolesServer) UnassignRolePermissions(ctx *gin.Context) {
+	var unassignReq gen_roles.UnassignPermissionRequest
+	if err := ctx.ShouldBindJSON(&unassignReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	authCtx, ok := authorizationv1.FromGinContext(ctx)
+	if !ok {
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
+		return
+	}
+	roleIds := *unassignReq.RoleId
+	permissions := *unassignReq.Permissions
+	err := r.permissionBinding.UnassignPermission(authCtx, []uuid.UUID{roleIds}, permissions)
+	if err != nil {
+		v1.GinHandleError(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Permissions deleted successfully"})
+}

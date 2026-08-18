@@ -34,6 +34,11 @@ var PermissionsV1 = Metadata{
 	Kind:  "permission",
 }
 
+var PermissionBindingsV1 = Metadata{
+	Group: Group,
+	Kind:  "permission_binding",
+}
+
 var LoginChallengesV1 = Metadata{
 	Group: Group,
 	Kind:  "login_challenge",

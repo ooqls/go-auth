@@ -33,3 +33,5 @@ cli/redis/redis
 
 
 .claude/
+# openapi-generator bundle intermediates
+v1/*/api/docs/openapi.bundled.yaml

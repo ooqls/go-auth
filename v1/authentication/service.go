@@ -50,7 +50,7 @@ func (s *ServiceImpl) Register(ctx contexts.LContext, reg authenticationv1.Regis
 		Username: reg.Username,
 		Key:      reg.Key,
 		Email:    reg.Email,
-		Secret:   []byte(reg.Username),
+		Secret:   reg.Secret,
 	})
 	if err != nil {
 		return nil, err

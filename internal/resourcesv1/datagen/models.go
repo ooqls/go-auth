@@ -27,12 +27,11 @@ type Challengesv1 struct {
 }
 
 type Permissionbindingsv1 struct {
-	RoleID       uuid.UUID
-	PermissionID uuid.UUID
+	RoleID     uuid.UUID
+	Permission string
 }
 
 type Permissionsv1 struct {
-	ID         uuid.UUID
 	Permission string
 }
 

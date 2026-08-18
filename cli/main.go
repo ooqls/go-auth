@@ -2,40 +2,31 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"io"
+	"flag"
 	"log"
-	"net/http"
 
-	"github.com/ooqls/go-auth/v1/authentication/authenticationapi/gen_authentication"
+	"github.com/ooqls/go-auth/v1/authentication/api/gen_authentication"
 	"github.com/ooqls/go-auth/v1/authentication/authenticationcli"
 )
 
-func unmarshal(resp *http.Response, target interface{}) error {
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
+var username string
+var pw string
 
-	return json.Unmarshal(b, target)
+func init() {
+	flag.StringVar(&username, "username", "", "Username to login")
+	flag.StringVar(&pw, "password", "", "password to use when logging in")
+	flag.Parse()
 }
 
 func main() {
-	c, err := gen_authentication.NewClient("http://localhost:8080")
+	c, err := gen_authentication.NewClient("http://localhost:8080/authentication/api/v1")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	authCli := authenticationcli.NewAuthenticationClient(*c)
 
-	resp, err := authCli.Register(context.Background(), "test@test.com", "test", "test2")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("resp: %+v", resp)
-
-	uid, okey, rkey, err := authCli.Login(context.Background(), "test2", "test")
+	uid, okey, rkey, err := authCli.Login(context.Background(), username, pw)
 	if err != nil {
 		log.Fatal(err)
 	}

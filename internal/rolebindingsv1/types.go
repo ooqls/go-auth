@@ -6,11 +6,6 @@ import (
 	"github.com/ooqls/go-auth/internal/rolebindingsv1/datagen"
 )
 
-var Metadata corev1.Metadata = corev1.Metadata{
-	Group: "authv1",
-	Kind:  "Rolebindingsv1",
-}
-
 type Rolebinding struct {
 	corev1.Metadata
 	RoleID uuid.UUID `json:"role_id"`
@@ -19,7 +14,7 @@ type Rolebinding struct {
 
 func fromDatagenRoleBinding(rb datagen.Rolebindingsv1) Rolebinding {
 	return Rolebinding{
-		Metadata: Metadata,
+		Metadata: corev1.RoleBindingsV1,
 		RoleID:   rb.RoleID,
 		UserID:   rb.UserID,
 	}

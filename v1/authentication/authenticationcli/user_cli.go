@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/ooqls/getset/crypto/crypto"
 	"github.com/ooqls/go-auth/internal/authenticationv1"
-	"github.com/ooqls/go-auth/v1/authentication/authenticationapi/gen_authentication"
+	"github.com/ooqls/go-auth/v1/authentication/api/gen_authentication"
 )
 
 func unmarshalResponse[T any](resp *http.Response) (*T, error) {
@@ -38,13 +39,12 @@ func NewAuthenticationClient(c gen_authentication.Client) *AuthenticationClient 
 
 func (c *AuthenticationClient) Register(ctx context.Context, email string, password string, username string) (*gen_authentication.RegisterResponse, error) {
 	salt := authenticationv1.GenerateSalt(username)
-
 	key, err := crypto.DeriveAESGCMKey(password, [16]byte(salt))
 	if err != nil {
 		return nil, err
 	}
 
-	encrypted, err := crypto.AESGCMEncryptWithKey(key, [16]byte(salt), []byte(username))
+	secret, err := crypto.AESGCMEncryptWithKey(key, salt, []byte(username))
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (c *AuthenticationClient) Register(ctx context.Context, email string, passw
 		Email:    email,
 		Key:      key,
 		Username: username,
-		Secret:   encrypted,
+		Secret:   secret,
 	})
 	if err != nil {
 		return nil, err
@@ -77,17 +77,18 @@ func (c *AuthenticationClient) Login(ctx context.Context, username string, passw
 		Username: username,
 	})
 	if err != nil {
-		return nil, nil, nil, err
+
+		return nil, nil, nil, fmt.Errorf("failed to get login challenge: %v", err)
 	}
 
 	if challengeResp.StatusCode != 200 {
 		err = unmarshalError(challengeResp)
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("got a non 200 status from api: %s: %v", challengeResp.Status, err)
 	}
 
 	challenge, err := unmarshalResponse[gen_authentication.ChallengeServerResponse](challengeResp)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
 	challengeStr := challenge.Challenge
@@ -95,7 +96,7 @@ func (c *AuthenticationClient) Login(ctx context.Context, username string, passw
 
 	key, err := crypto.DeriveAESGCMKey(password, [16]byte(salt))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("failed to derive key: %v", err)
 	}
 
 	log.Printf("key: %v", key)
@@ -104,7 +105,7 @@ func (c *AuthenticationClient) Login(ctx context.Context, username string, passw
 
 	encrypted, err := crypto.AESGCMEncryptWithKey(key, [16]byte(salt), []byte(challengeStr))
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("failed to encrypt key: %v", err)
 	}
 
 	resp, err := c.c.LoginChallengeResponse(ctx, gen_authentication.LoginChallengeResponseJSONRequestBody{
@@ -112,7 +113,7 @@ func (c *AuthenticationClient) Login(ctx context.Context, username string, passw
 		Id:        challenge.Id,
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, fmt.Errorf("failed to send login challenge response: %v", err)
 	}
 
 	if resp.StatusCode != 200 {
@@ -123,11 +124,12 @@ func (c *AuthenticationClient) Login(ctx context.Context, username string, passw
 	cookies := resp.Cookies()
 
 	for _, cookie := range cookies {
-		if cookie.Name == "RKEY" {
+		switch cookie.Name {
+		case "RKEY":
 			rkey = &cookie.Value
-		} else if cookie.Name == "OKEY" {
+		case "OKEY":
 			okey = &cookie.Value
-		} else if cookie.Name == "UID" {
+		case "UID":
 			uid = &cookie.Value
 		}
 	}

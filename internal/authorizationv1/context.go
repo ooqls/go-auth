@@ -16,9 +16,9 @@ const (
 type Context struct {
 	context.Context
 	User              usersv1.User
-	UserHierarchy     int32
 	Domain            string
 	internalOperation bool
+	authenticated     bool
 	l                 *zap.Logger
 }
 
@@ -36,10 +36,12 @@ func FromGinContext(ctx *gin.Context) (*Context, bool) {
 	return &authCtx, true
 }
 
-func NewAuthorizationContext(user usersv1.User) Context {
+func NewAuthorizationContext(ctx context.Context, user usersv1.User) Context {
 	return Context{
-		l:    zap.L().With(zap.String("user_id", user.Id.String())),
-		User: user,
+		Context:       ctx,
+		l:             log.NewLogger("authorization_context").With(zap.String("user_id", user.Id.String())),
+		authenticated: true,
+		User:          user,
 	}
 }
 
@@ -47,19 +49,25 @@ func NewInternalOperationContext(ctx context.Context) Context {
 	return Context{
 		Context:           ctx,
 		internalOperation: true,
+		authenticated:     false,
 		l:                 log.NewLogger("internal_operation").With(zap.String("user_id", InternalOperationUserID)),
 	}
 }
 
 func NewUnauthenticatedContext(ctx context.Context) Context {
 	return Context{
-		Context: ctx,
-		l:       log.NewLogger("unauthenticated_operation").With(zap.String("user_id", "unauthenticated")),
+		Context:       ctx,
+		authenticated: true,
+		l:             log.NewLogger("unauthenticated_operation").With(zap.String("user_id", "unauthenticated")),
 	}
 }
 
 func (a *Context) IsInternalOperation() bool {
 	return a.internalOperation
+}
+
+func (a *Context) IsAuthenticated() bool {
+	return a.authenticated
 }
 
 func (a *Context) GetAuthedUser() usersv1.User {

@@ -5,16 +5,14 @@ import (
 	"github.com/ooqls/go-auth/internal/rolesv1/datagen"
 )
 
-var Metadata = corev1.Metadata{
-	Group: "roles",
-	Kind:  Kind,
-}
-
 func FromDatagenRole(role datagen.Rolesv1) Role {
 	return Role{
 		Object: corev1.Object{
-			Metadata: Metadata,
-			Name:     role.Name,
+			Metadata:  corev1.RolesV1,
+			Name:      role.Name,
+			Id:        role.ID,
+			CreatedAt: role.CreatedAt.Time,
+			UpdatedAt: role.UpdatedAt.Time,
 		},
 		Description: role.Description,
 		Hierarchy:   role.Hierarchy,

@@ -9,13 +9,40 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Challengeattemptsv1 struct {
+	ID          uuid.UUID
+	ChallengeID uuid.UUID
+	UserID      uuid.UUID
+	Success     bool
+	CreatedAt   pgtype.Timestamptz
+}
+
+type Challengesv1 struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	Challenge string
+	Salt      []byte
+	CreatedAt pgtype.Timestamptz
+	ExpiresAt pgtype.Timestamptz
+}
+
+type Permissionbindingsv1 struct {
+	RoleID     uuid.UUID
+	Permission string
+}
+
+type Permissionsv1 struct {
+	Permission string
+}
+
 type Resourcesv1 struct {
-	ResourceGroup string
-	ResourceKind  string
-	ResourceName  string
-	Description   string
-	CreatedAt     pgtype.Timestamptz
-	UpdatedAt     pgtype.Timestamptz
+	ID          uuid.UUID
+	Name        string
+	Rgroup      string
+	Kind        string
+	Description string
+	CreatedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
 }
 
 type Rolebindingsv1 struct {
@@ -32,7 +59,13 @@ type Rolesv1 struct {
 	Description string
 	CreatedAt   pgtype.Timestamptz
 	UpdatedAt   pgtype.Timestamptz
-	Permissions []byte
+}
+
+type UserHighestRole struct {
+	UserID    uuid.UUID
+	RoleID    uuid.UUID
+	RoleName  string
+	Hierarchy int32
 }
 
 type Usersv1 struct {

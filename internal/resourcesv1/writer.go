@@ -1,6 +1,6 @@
 package resourcesv1
 
-//go:generate go run github.com/golang/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks
 
 import (
 	"context"
@@ -43,12 +43,7 @@ func (w *SQLWriter) CreateResource(ctx context.Context, group, kind, name string
 		return nil, err
 	}
 
-	return &Resourcev1{
-		Id:        res.ID,
-		Name:      res.Name,
-		CreatedAt: res.CreatedAt.Time,
-		UpdatedAt: res.UpdatedAt.Time,
-	}, nil
+	return FromDatagenResource(res), nil
 }
 
 func (w *SQLWriter) UpdateResource(ctx context.Context, group, kind, name string, newName string) (*Resourcev1, error) {
@@ -65,12 +60,7 @@ func (w *SQLWriter) UpdateResource(ctx context.Context, group, kind, name string
 		return nil, err
 	}
 
-	return &Resourcev1{
-		Id:        res.ID,
-		Name:      res.Name,
-		CreatedAt: res.CreatedAt.Time,
-		UpdatedAt: res.UpdatedAt.Time,
-	}, nil
+	return FromDatagenResource(res), nil
 }
 
 func (w *SQLWriter) DeleteResource(ctx context.Context, group, kind, name string) error {

@@ -84,4 +84,3 @@ CREATE TABLE IF NOT EXISTS challengeattemptsv1 (
 -- DROP TABLE IF EXISTS challengeattemptsv1;
 
 -- +goose StatementEnd
-

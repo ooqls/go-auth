@@ -67,10 +67,10 @@ func TestResourceReaderWriter(t *testing.T) {
 		ctx := context.Background()
 		retr, err := r.GetResources(ctx, 10, 0)
 		assert.Nilf(t, err, "should not error when querying resources")
-		assert.Equal(t, len(resObjs), len(retr), "should return some resources")
+		assert.Equal(t, len(resObjs), len(retr.Items), "should return some resources")
 
 		retr, err = r.GetResources(ctx, 10, 10)
 		assert.Nilf(t, err, "should not error when querying resources")
-		assert.Equal(t, 0, len(retr), "should return no resources")
+		assert.Equal(t, 0, len(retr.Items), "should return no resources")
 	})
 }

@@ -6,13 +6,6 @@ import (
 	"github.com/ooqls/go-auth/internal/usersv1/datagen"
 )
 
-var (
-	Metadata = corev1.Metadata{
-		Group: corev1.Group,
-		Kind:  "User",
-	}
-)
-
 type User struct {
 	corev1.Object
 	Username string `json:"username"`
@@ -24,7 +17,7 @@ type User struct {
 func FromDatagenUser(user datagen.Usersv1) User {
 	return User{
 		Object: corev1.Object{
-			Metadata: Metadata,
+			Metadata: corev1.UsersV1,
 			Id:       user.ID,
 			Name:     user.Username,
 		},
@@ -38,7 +31,7 @@ func FromDatagenUser(user datagen.Usersv1) User {
 func NewUser(id uuid.UUID, username, email, key, salt string) User {
 	return User{
 		Object: corev1.Object{
-			Metadata: Metadata,
+			Metadata: corev1.UsersV1,
 			Id:       id,
 			Name:     username,
 		},

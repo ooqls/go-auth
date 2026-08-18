@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/go-auth/internal/contexts"
+	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/permissionsv1/datagen"
 	v1 "github.com/ooqls/go-auth/v1"
 	"go.uber.org/zap"
@@ -16,11 +17,14 @@ import (
 
 var _ Reader = &SQLReader{}
 
-//go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
 type Reader interface {
-	GetPermissions(ctx contexts.LContext, page, pageSize int) ([]Permission, error)
+	GetPermissions(ctx contexts.LContext, page, pageSize int) (*corev1.Result[[]Permission], error)
 	GetPermission(ctx contexts.LContext, permission string) (*Permission, error)
-	HasPermission(ctx contexts.LContext, userID uuid.UUID, permission string) (bool, error)
+	SearchPermissions(ctx contexts.LContext, permission string) ([]string, error)
+	HasCorePermission(ctx contexts.LContext, userID uuid.UUID, group, kind, action string) (bool, error)
+	HasResourcePermission(ctx contexts.LContext, userID uuid.UUID, group, kind, action string) (bool, error)
+
 	GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error)
 	GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error)
 	ClearCache(ctx context.Context) error
@@ -38,11 +42,33 @@ type SQLReader struct {
 	q     *datagen.Queries
 }
 
-func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) ([]Permission, error) {
+func (r *SQLReader) SearchPermissions(ctx contexts.LContext, permission string) ([]string, error) {
+	var items []string
+	err := r.cache.Get(ctx, "search_permissions:"+permission, &items)
+	if err == nil {
+		return items, nil
+	}
+
+	items, err = r.q.SearchPermissions(ctx, "%"+permission+"%")
+	if err != nil {
+		return nil, err
+	}
+	err = r.cache.Set(ctx, "search_permissions:"+permission, items)
+	if err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) (*corev1.Result[[]Permission], error) {
 	cacheKey := fmt.Sprintf("permissions:%d:%d", page, pageSize)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
-		return cached, nil
+		total, err := r.q.CountPermissions(ctx)
+		if err != nil {
+			return nil, v1.ErrInternal(err, v1.M{"page": page, "pageSize": pageSize})
+		}
+		return &corev1.Result[[]Permission]{Items: cached, TotalCount: total}, nil
 	}
 
 	rows, err := r.q.GetPermissions(ctx, datagen.GetPermissionsParams{
@@ -53,10 +79,15 @@ func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) ([
 		return nil, v1.ErrInternal(err, v1.M{"page": page, "pageSize": pageSize})
 	}
 
+	total, err := r.q.CountPermissions(ctx)
+	if err != nil {
+		return nil, v1.ErrInternal(err, v1.M{"page": page, "pageSize": pageSize})
+	}
+
 	var perms []Permission
 	for _, row := range rows {
 		perms = append(perms, Permission{
-			Metadata:   Metadata,
+			Metadata:   corev1.PermissionsV1,
 			Permission: row,
 		})
 	}
@@ -67,7 +98,7 @@ func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) ([
 		}
 	}
 
-	return perms, nil
+	return &corev1.Result[[]Permission]{Items: perms, TotalCount: total}, nil
 }
 
 func (r *SQLReader) GetPermission(ctx contexts.LContext, permission string) (*Permission, error) {
@@ -86,7 +117,7 @@ func (r *SQLReader) GetPermission(ctx contexts.LContext, permission string) (*Pe
 	}
 
 	p := Permission{
-		Metadata:   Metadata,
+		Metadata:   corev1.PermissionsV1,
 		Permission: row,
 	}
 
@@ -99,10 +130,21 @@ func (r *SQLReader) GetPermission(ctx contexts.LContext, permission string) (*Pe
 	return &p, nil
 }
 
-func (r *SQLReader) HasPermission(ctx contexts.LContext, userID uuid.UUID, permission string) (bool, error) {
-	return r.q.HasPermission(ctx, datagen.HasPermissionParams{
-		UserID:     userID,
-		Permission: permission,
+func (r *SQLReader) HasResourcePermission(ctx contexts.LContext, userID uuid.UUID, group, kind, action string) (bool, error) {
+	return r.q.HasResourcePermission(ctx, datagen.HasResourcePermissionParams{
+		UserID: userID,
+		Rgroup: group,
+		Kind:   kind,
+		Action: action,
+	})
+}
+
+func (r *SQLReader) HasCorePermission(ctx contexts.LContext, userID uuid.UUID, group, kind, action string) (bool, error) {
+	return r.q.HasCorePermission(ctx, datagen.HasCorePermissionParams{
+		UserID: userID,
+		Rgroup: group,
+		Kind:   kind,
+		Action: action,
 	})
 }
 
@@ -121,7 +163,7 @@ func (r *SQLReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID u
 	var perms []Permission
 	for _, row := range rows {
 		perms = append(perms, Permission{
-			Metadata:   Metadata,
+			Metadata:   corev1.PermissionsV1,
 			Permission: row,
 		})
 	}
@@ -150,7 +192,7 @@ func (r *SQLReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUI
 	var perms []Permission
 	for _, row := range rows {
 		perms = append(perms, Permission{
-			Metadata:   Metadata,
+			Metadata:   corev1.PermissionsV1,
 			Permission: row,
 		})
 	}

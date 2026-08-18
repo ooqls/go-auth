@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 
-CREATE VIEW user_highest_role AS
+CREATE OR REPLACE VIEW user_highest_role AS
 SELECT
   rb.user_id AS user_id,
   r.id   AS role_id,

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks -mock_names=Reader=MockReader
+//go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks -mock_names=Reader=MockReader
 type Reader interface {
 	GetChallengeAttempts(ctx context.Context, userID string) ([]ChallengeAttempt, error)
 	GetFailedAttempts(ctx context.Context, userID string, minutes int) ([]ChallengeAttempt, error)

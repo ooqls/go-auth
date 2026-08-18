@@ -12,7 +12,7 @@ import (
 
 var _ Writer = &SQLWriter{}
 
-//go:generate go run github.com/golang/mock/mockgen -source=writer.go -destination=mocks/mock_user_writer.go -package=mocks -mock_names=UserWriter=MockUserWriter
+//go:generate go run go.uber.org/mock/mockgen -source=writer.go -destination=mocks/mock_user_writer.go -package=mocks -mock_names=UserWriter=MockUserWriter
 type Writer interface {
 	CreateUser(ctx contexts.LContext, user datagen.CreateUserParams) (*datagen.Usersv1, error)
 	DeleteUser(ctx contexts.LContext, id uuid.UUID) error

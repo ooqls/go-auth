@@ -3,13 +3,12 @@ package datav1
 import (
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ooqls/getset/cache/factory"
 	"github.com/ooqls/go-auth/internal/aggsv1"
 	aggsdatagen "github.com/ooqls/go-auth/internal/aggsv1/datagen"
 	"github.com/ooqls/go-auth/internal/permissionbindingsv1"
-	"github.com/ooqls/go-auth/internal/permissionbindingsv1/datagen"
-	permissionsbindingsdatagen "github.com/ooqls/go-auth/internal/permissionbindingsv1/datagen"
+	permissionbindingsdatagen "github.com/ooqls/go-auth/internal/permissionbindingsv1/datagen"
 	"github.com/ooqls/go-auth/internal/permissionsv1"
 	permissionsdatagen "github.com/ooqls/go-auth/internal/permissionsv1/datagen"
 	resources "github.com/ooqls/go-auth/internal/resourcesv1"
@@ -26,14 +25,14 @@ import (
 
 var _ Factory = (*SQLFactory)(nil)
 
-func NewFactory(db pgx.Conn, cacheFactory factory.CacheFactory) *SQLFactory {
+func NewFactory(db *pgxpool.Pool, cacheFactory factory.CacheFactory) *SQLFactory {
 	return &SQLFactory{
 		db:           db,
 		cacheFactory: cacheFactory,
 	}
 }
 
-//go:generate go run github.com/golang/mock/mockgen -source=factory.go -destination=mocks/mock_factory.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=factory.go -destination=mocks/mock_factory.go -package=mocks
 type Factory interface {
 	NewRoleReader() roles.Reader
 	NewRoleWriter() roles.Writer
@@ -51,7 +50,7 @@ type Factory interface {
 }
 
 type SQLFactory struct {
-	db           pgx.Conn
+	db           *pgxpool.Pool
 	cacheFactory factory.CacheFactory
 }
 
@@ -64,23 +63,28 @@ type SQLFactory struct {
 // }
 
 func (f *SQLFactory) NewRoleBindingsReader() rolebindings.Reader {
-	return rolebindings.NewSQLReader(f.cacheFactory.NewCache("rolebindings", time.Second*15), rolebindingsdatagen.New(&f.db))
+	return rolebindings.NewSQLReader(f.cacheFactory.NewCache("rolebindings", time.Second*15), rolebindingsdatagen.New(f.db))
 }
 
 func (f *SQLFactory) NewRoleBindingsWriter() rolebindings.Writer {
-	return rolebindings.NewSQLWriter(rolebindingsdatagen.New(&f.db))
+	return rolebindings.NewSQLWriter(rolebindingsdatagen.New(f.db))
 }
 
 func (f *SQLFactory) NewRoleReader() roles.Reader {
-	return roles.NewSQLRoleReader(f.cacheFactory.NewCache("roles", time.Hour*24), rolesdatagen.New(&f.db))
+	cache := f.cacheFactory.NewCache("roles", time.Hour*24)
+	queries := rolesdatagen.New(f.db)
+	return roles.NewSQLRoleReader(cache, queries)
 }
 
 func (f *SQLFactory) NewUserReader() users.Reader {
-	return users.NewSQLUserReader(f.cacheFactory.NewCache("users", time.Hour*24), usersdatagen.New(&f.db))
+	cache := f.cacheFactory.NewCache("users", time.Hour*24)
+	queries := usersdatagen.New(f.db)
+	return users.NewSQLReader(cache, queries)
 }
 
 func (f *SQLFactory) NewUserWriter() users.Writer {
-	return users.NewSQLWriter(usersdatagen.New(&f.db))
+	queries := usersdatagen.New(f.db)
+	return users.NewSQLWriter(queries)
 }
 
 // func (f *SQLFactory) NewUserAggReader() userdata.AggReader {
@@ -93,36 +97,44 @@ func (f *SQLFactory) NewUserWriter() users.Writer {
 
 func (f *SQLFactory) NewResourceReader() resources.Reader {
 	cache := f.cacheFactory.NewCache("resources", time.Hour*24)
-	return resources.NewSQLReader(&cache, resourcesdatagen.New(&f.db))
+	queries := resourcesdatagen.New(f.db)
+	return resources.NewSQLReader(&cache, queries)
 }
 
 func (f *SQLFactory) NewResourceWriter() resources.Writer {
-	return resources.NewSQLWriter(resourcesdatagen.New(&f.db))
+	queries := resourcesdatagen.New(f.db)
+	return resources.NewSQLWriter(queries)
 }
 
 func (f *SQLFactory) NewRoleWriter() rolesv1.Writer {
-	return rolesv1.NewSQLWriter(rolesdatagen.New(&f.db))
+	queries := rolesdatagen.New(f.db)
+	return rolesv1.NewSQLWriter(queries)
 }
 
 func (f *SQLFactory) NewPermissionReader() permissionsv1.Reader {
 	cache := f.cacheFactory.NewCache("permissions", time.Hour*24)
-	return permissionsv1.NewSQLReader(&cache, permissionsdatagen.New(&f.db))
+	queries := permissionsdatagen.New(f.db)
+	return permissionsv1.NewSQLReader(&cache, queries)
 }
 
 func (f *SQLFactory) NewPermissionWriter() permissionsv1.Writer {
-	return permissionsv1.NewSQLWriter(permissionsdatagen.New(&f.db))
+	queries := permissionsdatagen.New(f.db)
+	return permissionsv1.NewSQLWriter(queries)
 }
 
 func (f *SQLFactory) NewPermissionBindingReader() permissionbindingsv1.Reader {
 	cache := f.cacheFactory.NewCache("permission_bindings", time.Hour*24)
-	return permissionbindingsv1.NewSQLReader(&cache, *datagen.New(&f.db))
+	queries := permissionbindingsdatagen.New(f.db)
+	return permissionbindingsv1.NewSQLReader(&cache, *queries)
 }
 
 func (f *SQLFactory) NewPermissionBindingWriter() permissionbindingsv1.Writer {
-	return permissionbindingsv1.NewSQLWriter(*permissionsbindingsdatagen.New(&f.db))
+	queries := permissionbindingsdatagen.New(f.db)
+	return permissionbindingsv1.NewSQLWriter(*queries)
 }
 
 func (f *SQLFactory) NewAggReader() aggsv1.Reader {
 	cache := f.cacheFactory.NewCache("aggs_reader", time.Hour*24)
-	return aggsv1.NewSQLReader(aggsdatagen.New(&f.db), &cache)
+	queries := aggsdatagen.New(f.db)
+	return aggsv1.NewSQLReader(queries, &cache)
 }

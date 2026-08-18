@@ -1,7 +1,6 @@
 package mocks
 
 import (
-	"github.com/golang/mock/gomock"
 	"github.com/ooqls/go-auth/internal/aggsv1"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/internal/permissionbindingsv1"
@@ -10,6 +9,7 @@ import (
 	"github.com/ooqls/go-auth/internal/rolebindingsv1"
 	"github.com/ooqls/go-auth/internal/rolesv1"
 	"github.com/ooqls/go-auth/internal/usersv1"
+	"go.uber.org/mock/gomock"
 )
 
 type MockParams struct {

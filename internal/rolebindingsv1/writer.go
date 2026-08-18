@@ -1,6 +1,6 @@
 package rolebindingsv1
 
-//go:generate go run github.com/golang/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks
 
 import (
 	"github.com/google/uuid"

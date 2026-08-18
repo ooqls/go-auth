@@ -10,6 +10,9 @@ SELECT * FROM usersv1 ORDER BY username LIMIT $1 OFFSET $2;
 -- name: SearchUsers :many
 SELECT * FROM usersv1 WHERE username ILIKE $1 ORDER BY username LIMIT $2 OFFSET $3;
 
+-- name: CountUsers :one
+SELECT COUNT(*) FROM usersv1;
+
 -- name: CreateUser :one
 INSERT INTO usersv1 (
   id,

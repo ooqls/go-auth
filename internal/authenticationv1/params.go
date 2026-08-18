@@ -6,6 +6,7 @@ type RegistrationParam struct {
 	Username string
 	Key      []byte
 	Email    string
+	Secret   []byte
 }
 
 type TokenResponse struct {

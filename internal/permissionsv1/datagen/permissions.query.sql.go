@@ -11,6 +11,17 @@ import (
 	"github.com/google/uuid"
 )
 
+const countPermissions = `-- name: CountPermissions :one
+SELECT COUNT(*) FROM permissionsv1
+`
+
+func (q *Queries) CountPermissions(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countPermissions)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPermission = `-- name: CreatePermission :one
 INSERT INTO permissionsv1 (
   permission
@@ -154,25 +165,113 @@ func (q *Queries) GetPermissionsForUserByGroup(ctx context.Context, userID uuid.
 	return items, nil
 }
 
-const hasPermission = `-- name: HasPermission :one
+const hasCorePermission = `-- name: HasCorePermission :one
 SELECT EXISTS (
   SELECT 1
   FROM rolebindingsv1 rb
   INNER JOIN permissionbindingsv1 pb ON rb.role_id = pb.role_id
   INNER JOIN permissionsv1 p ON pb.permission = p.permission
   WHERE rb.user_id = $1
-    AND (p.permission = $2 OR p.permission = '*')
+    AND (
+      p.permission = 'core:*'
+      OR (
+        (split_part(p.permission, ':', 1) = 'core' OR split_part(p.permission, ':', 1) = '*')
+        AND (split_part(p.permission, ':', 2) = $2 OR split_part(p.permission, ':', 2) = '*')
+        AND (split_part(p.permission, ':', 3) = $3 OR split_part(p.permission, ':', 3) = '*')
+        AND (split_part(p.permission, ':', 4) = $4 OR split_part(p.permission, ':', 4) = '*')
+      )
+    )
 )
 `
 
-type HasPermissionParams struct {
-	UserID     uuid.UUID
-	Permission string
+type HasCorePermissionParams struct {
+	UserID uuid.UUID
+	Rgroup string
+	Kind   string
+	Action string
 }
 
-func (q *Queries) HasPermission(ctx context.Context, arg HasPermissionParams) (bool, error) {
-	row := q.db.QueryRow(ctx, hasPermission, arg.UserID, arg.Permission)
+// Stored permissions are encoded as "group:kind:action". A stored
+// permission may use '*' in any component as a wildcard. The request
+// (group, kind, action) is matched component-by-component, where a
+// stored '*' matches anything. A bare "*" permission grants everything.
+func (q *Queries) HasCorePermission(ctx context.Context, arg HasCorePermissionParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasCorePermission,
+		arg.UserID,
+		arg.Rgroup,
+		arg.Kind,
+		arg.Action,
+	)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const hasResourcePermission = `-- name: HasResourcePermission :one
+SELECT EXISTS (
+  SELECT 1
+  FROM rolebindingsv1 rb
+  INNER JOIN permissionbindingsv1 pb ON rb.role_id = pb.role_id
+  INNER JOIN permissionsv1 p ON pb.permission = p.permission
+  WHERE rb.user_id = $1
+    AND (
+      p.permission = 'resources:*'
+      OR (
+        (split_part(p.permission, ':', 1) = 'resource' OR split_part(p.permission, ':', 1) = '*')
+        AND (split_part(p.permission, ':', 2) = $2 OR split_part(p.permission, ':', 2) = '*')
+        AND (split_part(p.permission, ':', 3) = $3 OR split_part(p.permission, ':', 3) = '*')
+        AND (split_part(p.permission, ':', 4) = $4 OR split_part(p.permission, ':', 4) = '*')
+      )
+    )
+)
+`
+
+type HasResourcePermissionParams struct {
+	UserID uuid.UUID
+	Rgroup string
+	Kind   string
+	Action string
+}
+
+// Stored permissions are encoded as "group:kind:action". A stored
+// permission may use '*' in any component as a wildcard. The request
+// (group, kind, action) is matched component-by-component, where a
+// stored '*' matches anything. A bare "*" permission grants everything.
+func (q *Queries) HasResourcePermission(ctx context.Context, arg HasResourcePermissionParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasResourcePermission,
+		arg.UserID,
+		arg.Rgroup,
+		arg.Kind,
+		arg.Action,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const searchPermissions = `-- name: SearchPermissions :many
+SELECT
+  p.permission AS permission
+FROM permissionsv1 p
+WHERE p.permission LIKE $1
+`
+
+func (q *Queries) SearchPermissions(ctx context.Context, permission string) ([]string, error) {
+	rows, err := q.db.Query(ctx, searchPermissions, permission)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var permission string
+		if err := rows.Scan(&permission); err != nil {
+			return nil, err
+		}
+		items = append(items, permission)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

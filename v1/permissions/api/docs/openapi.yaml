@@ -1,0 +1,140 @@
+openapi: 3.0.0
+servers:
+    - url: https://localhost:8080/permissions/api/v1
+      description: Local server
+    - url: https://permissions:8080/api/v1
+    - url: http://localhost:8080/permissions/api/v1
+    - url: http://permissions:8080/api/v1
+info:
+    title: Authorization Permissions
+    version: 1.0.0
+security:
+    - cookieAuth: []
+components:
+    securitySchemes:
+        cookieAuth:
+            type: apiKey
+            in: cookie
+            name: OKEY
+    schemas:
+        PermissionList:
+            type: object
+            required:
+                - items
+                - total_count
+            properties:
+                items:
+                    type: array
+                    items:
+                        $ref: "schemas.yaml#/components/schemas/Permission"
+                total_count:
+                    type: integer
+        CreateRequest:
+            type: object
+            required:
+                - permission
+            properties:
+                permission:
+                    $ref: "schemas.yaml#/components/schemas/Permission"
+        CreateResponse:
+            type: object
+            required:
+                - permission
+            properties:
+                permission:
+                    $ref: "schemas.yaml#/components/schemas/Permission"
+paths:
+    /permission:
+        get:
+            operationId: listPermissions
+            summary: Retrieves all permissions
+            parameters:
+                - name: page
+                  in: query
+                  description: The page number
+                  required: false
+                  schema:
+                      type: integer
+                - name: page_size
+                  in: query
+                  description: The page size
+                  required: false
+                  schema:
+                      type: integer
+            responses:
+                "200":
+                    description: Successful permission retrieval
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/PermissionList"
+                "401":
+                    description: Invalid credentials
+        post:
+            operationId: createPermission
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateRequest"
+                required: true
+            responses:
+                "200":
+                    description: Successful permission creation
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/CreateResponse"
+                "401":
+                    description: Invalid credentials
+        delete:
+            operationId: deletePermission
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "schemas.yaml#/components/schemas/DeleteRequest"
+            responses:
+                "200":
+                    description: Successful permission deletion
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "schemas.yaml#/components/schemas/DeleteResponse"
+                "401":
+                    description: Invalid credentials
+    /permissions/me:
+        get:
+            operationId: listMyPermissions
+            summary: Retrieves all permissions for the current user
+            responses:
+                "200":
+                    description: Successful permission retrieval
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    type: string
+                "401":
+                    description: Invalid credentials
+    /permissions/search:
+        post:
+            operationId: searchPermissions
+            summary: Searches for permissions based on the provided query
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "schemas.yaml#/components/schemas/SearchRequest"
+            responses:
+                "200":
+                    description: Successful permission search
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    type: string
+                "401":
+                    description: Invalid credentials

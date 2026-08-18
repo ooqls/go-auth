@@ -1,6 +1,6 @@
 package resourcesv1
 
-//go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
 
 import (
 	"context"
@@ -9,8 +9,10 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/getset/log"
+	"github.com/ooqls/go-auth/internal/corev1"
 	"github.com/ooqls/go-auth/internal/resourcesv1/datagen"
 	"go.uber.org/zap"
 )
@@ -26,9 +28,10 @@ func getPaginatedKey(limit, offset int32) string {
 type Reader interface {
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourcev1, error)
 	GetResource(ctx context.Context, group, kind, name string) (*Resourcev1, error)
-	GetResources(ctx context.Context, limit, offset int32) ([]Resourcev1, error)
-	GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) ([]Resourcev1, error)
-	GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) ([]Resourcev1, error)
+	GetResources(ctx context.Context, limit, offset int32) (*corev1.Result[[]Resourcev1], error)
+	GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) (*corev1.Result[[]Resourcev1], error)
+	GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) (*corev1.Result[[]Resourcev1], error)
+	SearchResources(ctx context.Context, group, kind, name, query *string, limit, offset int32) (*corev1.Result[[]Resourcev1], error)
 	ClearCache(ctx context.Context) error
 }
 
@@ -60,7 +63,7 @@ func (r *SQLReader) GetResource(ctx context.Context, group, kind, name string) (
 		return nil, fmt.Errorf("failed to get resource from database: %v", err)
 	}
 
-	resObj := fromDatagenResource(res)
+	resObj := FromDatagenResource(res)
 
 	r.setCache(ctx, cacheKey, *resObj)
 	return resObj, nil
@@ -80,16 +83,20 @@ func (r *SQLReader) GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourc
 		return nil, fmt.Errorf("failed to get resource from database: %v", err)
 	}
 
-	resObj := fromDatagenResource(res)
+	resObj := FromDatagenResource(res)
 
 	r.setCache(ctx, cacheKey, *resObj)
 	return resObj, nil
 }
 
-func (r *SQLReader) GetResources(ctx context.Context, limit, offset int32) ([]Resourcev1, error) {
+func (r *SQLReader) GetResources(ctx context.Context, limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
 	cacheKey := getPaginatedKey(limit, offset)
 	if res := r.getCache(ctx, cacheKey); res != nil {
-		return res, nil
+		total, err := r.q.CountAllResources(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
 	}
 
 	qres, err := r.q.GetResources(ctx, datagen.GetResourcesParams{
@@ -101,24 +108,26 @@ func (r *SQLReader) GetResources(ctx context.Context, limit, offset int32) ([]Re
 		return nil, err
 	}
 
-	res := make([]Resourcev1, len(qres))
-	for i, obj := range qres {
-		res[i] = Resourcev1{
-			Id:        obj.ID,
-			Name:      obj.Name,
-			CreatedAt: obj.CreatedAt.Time,
-			UpdatedAt: obj.UpdatedAt.Time,
-		}
+	total, err := r.q.CountAllResources(ctx)
+	if err != nil {
+		r.l.Error("failed to count resources", zap.Error(err))
+		return nil, err
 	}
 
+	res := FromDatagenResourceList(qres)
+
 	r.setCache(ctx, cacheKey, res...)
-	return res, nil
+	return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
 }
 
-func (r *SQLReader) GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) ([]Resourcev1, error) {
+func (r *SQLReader) GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
 	cacheKey := fmt.Sprintf("group-%s:%s", group, getPaginatedKey(limit, offset))
 	if res := r.getCache(ctx, cacheKey); res != nil {
-		return res, nil
+		total, err := r.q.CountResourcesByGroup(ctx, group)
+		if err != nil {
+			return nil, err
+		}
+		return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
 	}
 
 	qres, err := r.q.GetResourcesByGroup(ctx, datagen.GetResourcesByGroupParams{
@@ -131,24 +140,26 @@ func (r *SQLReader) GetResourcesByGroup(ctx context.Context, group string, limit
 		return nil, err
 	}
 
-	res := make([]Resourcev1, len(qres))
-	for i, obj := range qres {
-		res[i] = Resourcev1{
-			Id:        obj.ID,
-			Name:      obj.Name,
-			CreatedAt: obj.CreatedAt.Time,
-			UpdatedAt: obj.UpdatedAt.Time,
-		}
+	total, err := r.q.CountResourcesByGroup(ctx, group)
+	if err != nil {
+		r.l.Error("failed to count resources by group", zap.String("group", group), zap.Error(err))
+		return nil, err
 	}
 
+	res := FromDatagenResourceList(qres)
+
 	r.setCache(ctx, cacheKey, res...)
-	return res, nil
+	return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
 }
 
-func (r *SQLReader) GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) ([]Resourcev1, error) {
+func (r *SQLReader) GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
 	cacheKey := fmt.Sprintf("group-%s:kind-%s:%s", group, kind, getPaginatedKey(limit, offset))
 	if res := r.getCache(ctx, cacheKey); res != nil {
-		return res, nil
+		total, err := r.q.CountResources(ctx, datagen.CountResourcesParams{Rgroup: group, Kind: kind})
+		if err != nil {
+			return nil, err
+		}
+		return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
 	}
 
 	qres, err := r.q.GetResourcesByGroupAndKind(ctx, datagen.GetResourcesByGroupAndKindParams{
@@ -162,19 +173,85 @@ func (r *SQLReader) GetResourcesByGroupAndKind(ctx context.Context, group, kind 
 		return nil, err
 	}
 
-	res := make([]Resourcev1, len(qres))
-	for i, obj := range qres {
-		res[i] = Resourcev1{
-			Id:        obj.ID,
-			Name:      obj.Name,
-			CreatedAt: obj.CreatedAt.Time,
-			UpdatedAt: obj.UpdatedAt.Time,
+	total, err := r.q.CountResources(ctx, datagen.CountResourcesParams{Rgroup: group, Kind: kind})
+	if err != nil {
+		r.l.Error("failed to count resources by group and kind", zap.String("group", group), zap.String("kind", kind), zap.Error(err))
+		return nil, err
+	}
+
+	res := FromDatagenResourceList(qres)
+
+	r.setCache(ctx, cacheKey, res...)
+	return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
+}
+
+func (r *SQLReader) SearchResources(ctx context.Context,
+	group,
+	kind,
+	name,
+	query *string,
+	limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
+	cacheKey := "search_resources"
+	keys := []*string{group, kind, name, query}
+	for _, key := range keys {
+		if key != nil {
+			cacheKey = fmt.Sprintf("%s:%s", cacheKey, *key)
+		} else {
+			cacheKey += ":*"
 		}
 	}
 
+	cached := r.getCache(ctx, cacheKey)
+	if cached != nil {
+		total, err := r.q.CountSearchResources(ctx, datagen.CountSearchResourcesParams{
+			Rgroup: toPgText(group),
+			Kind:   toPgText(kind),
+			Name:   toPgText(name),
+			Query:  toPgText(query),
+		})
+		if err != nil {
+			return nil, err
+		}
+		return &corev1.Result[[]Resourcev1]{Items: cached, TotalCount: total}, nil
+	}
+
+	qres, err := r.q.SearchResources(ctx, datagen.SearchResourcesParams{
+		Rgroup: toPgText(group),
+		Kind:   toPgText(kind),
+		Name:   toPgText(name),
+		Query:  toPgText(query),
+		Limit:  limit,
+		Offset: offset,
+	})
+	if err != nil {
+		r.l.Error("failed to search resources", zap.Error(err))
+		return nil, err
+	}
+
+	total, err := r.q.CountSearchResources(ctx, datagen.CountSearchResourcesParams{
+		Rgroup: toPgText(group),
+		Kind:   toPgText(kind),
+		Name:   toPgText(name),
+		Query:  toPgText(query),
+	})
+	if err != nil {
+		r.l.Error("failed to count search resources", zap.Error(err))
+		return nil, err
+	}
+
+	res := FromDatagenResourceList(qres)
+
 	r.setCache(ctx, cacheKey, res...)
-	return res, nil
+	return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
 }
+
+func toPgText(s *string) pgtype.Text {
+	if s == nil {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: *s, Valid: true}
+}
+
 func (r *SQLReader) ClearCache(ctx context.Context) error {
 	err := r.c.Clear(ctx)
 	if err != nil {

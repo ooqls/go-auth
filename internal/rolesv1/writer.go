@@ -13,7 +13,7 @@ import (
 
 var _ Writer = &SQLWriter{}
 
-//go:generate go run github.com/golang/mock/mockgen -source=writer.go -destination=mocks/mock_role_writer.go -package=mocks -mock_names=RoleWriter=MockRoleWriter
+//go:generate go run go.uber.org/mock/mockgen -source=writer.go -destination=mocks/mock_role_writer.go -package=mocks -mock_names=RoleWriter=MockRoleWriter
 type Writer interface {
 	CreateRole(ctx context.Context, name, description string, hierarchy int32) (*Role, error)
 	UpdateRole(ctx context.Context, roleID uuid.UUID, name, description *string, hierarchy *int32) (*Role, error)

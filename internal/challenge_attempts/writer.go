@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//go:generate go run github.com/golang/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks -mock_names=Writer=MockWriter
+//go:generate go run go.uber.org/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks -mock_names=Writer=MockWriter
 type Writer interface {
 	CreateChallengeAttempt(ctx context.Context, challengeAttempt ChallengeAttempt) error
 }

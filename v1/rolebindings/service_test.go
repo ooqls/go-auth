@@ -38,9 +38,8 @@ func TestMain(m *testing.M) {
 }
 
 func newService() *ServiceImpl {
-	f := datav1.NewFactory(*pgx.GetPGX(), &factory.MemCacheFactory{})
-	auth := authorizationv1.NewAuthorizerImpl(f)
-	return NewServiceImpl(auth, f.NewRoleBindingsReader(), f.NewRoleBindingsWriter())
+	f := datav1.NewFactory(pgx.GetPGX(), &factory.MemCacheFactory{})
+	return NewServiceImpl(f)
 }
 
 func newCtx() *authorizationv1.Context {

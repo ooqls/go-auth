@@ -20,6 +20,9 @@ RETURNING *;
 -- name: DeleteRole :exec
 DELETE FROM rolesv1 WHERE id = $1;
 
+-- name: CountRoles :one
+SELECT COUNT(*) FROM rolesv1;
+
 -- name: GetRole :one
 SELECT * FROM rolesv1 WHERE id = $1;
 

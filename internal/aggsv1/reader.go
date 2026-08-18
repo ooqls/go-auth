@@ -1,6 +1,6 @@
 package aggsv1
 
-//go:generate go run github.com/golang/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
 
 import (
 	"context"
@@ -64,10 +64,7 @@ func (r *SQLReader) GetRoleAgg(ctx context.Context, roleID uuid.UUID) (*RoleAgg,
 	agg := &RoleAgg{
 		Role: rolesv1.Role{
 			Object: corev1.Object{
-				Metadata: corev1.Metadata{
-					Group: "roles",
-					Kind:  rolesv1.Kind,
-				},
+				Metadata: corev1.RolesV1,
 				Id:   first.RoleID,
 				Name: first.RoleName,
 			},
@@ -78,7 +75,7 @@ func (r *SQLReader) GetRoleAgg(ctx context.Context, roleID uuid.UUID) (*RoleAgg,
 
 	for _, row := range rows {
 		perm := permissionsv1.Permission{
-			Metadata:   permissionsv1.Metadata,
+			Metadata:   corev1.PermissionsV1,
 			Permission: row.Permission,
 		}
 		agg.Permissions = append(agg.Permissions, perm)
@@ -117,7 +114,7 @@ func (r *SQLReader) GetUserAgg(ctx context.Context, userID uuid.UUID) (*UserAgg,
 	agg := &UserAgg{
 		User: usersv1.User{
 			Object: corev1.Object{
-				Metadata: usersv1.Metadata,
+				Metadata: corev1.UsersV1,
 				Id:       first.UserID,
 				Name:     first.Username,
 			},
@@ -140,10 +137,7 @@ func (r *SQLReader) GetUserAgg(ctx context.Context, userID uuid.UUID) (*UserAgg,
 			role = &RoleAgg{
 				Role: rolesv1.Role{
 					Object: corev1.Object{
-						Metadata: corev1.Metadata{
-							Group: "roles",
-							Kind:  rolesv1.Kind,
-						},
+						Metadata: corev1.RolesV1,
 						Id:   roleID,
 						Name: row.RoleName.String,
 					},
@@ -156,7 +150,7 @@ func (r *SQLReader) GetUserAgg(ctx context.Context, userID uuid.UUID) (*UserAgg,
 		}
 
 		perm := permissionsv1.Permission{
-			Metadata:   permissionsv1.Metadata,
+			Metadata:   corev1.PermissionsV1,
 			Permission: row.Permission.String,
 		}
 		role.Permissions = append(role.Permissions, perm)

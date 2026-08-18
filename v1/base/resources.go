@@ -5,12 +5,12 @@ import (
 	"github.com/ooqls/getset/app/app"
 	"github.com/ooqls/getset/db/pgx"
 	"github.com/ooqls/go-auth/internal/datav1"
-	"github.com/ooqls/go-auth/v1/resources/resourcesapi"
-	"github.com/ooqls/go-auth/v1/resources/resourcesapi/gen_resources"
+	resourcesapi "github.com/ooqls/go-auth/v1/resources/api"
+	"github.com/ooqls/go-auth/v1/resources/api/gen_resources"
 )
 
 func NewResourcesServer(ctx *app.AppContext) (gen_resources.ServerInterface, error) {
-	factory := datav1.NewFactory(*pgx.GetPGX(), nil)
+	factory := datav1.NewFactory(pgx.GetPGX(), ctx.CacheFactory())
 	return resourcesapi.NewResourcesServer(factory, ctx.L()), nil
 }
 
@@ -20,7 +20,7 @@ func RegisterResourcesHandlers(e *gin.Engine, server gen_resources.ServerInterfa
 }
 
 func RegisterResourceDocsHandler(e *gin.Engine, _ gen_resources.ServerInterface) {
-	g := e.Group("api/v1/")
+	g := e.Group("api/")
 	resourcesapi.RegisterDocsHandler(g)
 }
 

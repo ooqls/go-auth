@@ -9,7 +9,7 @@ import (
 
 var _ Writer = &SQLWriter{}
 
-//go:generate go run github.com/golang/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks
+//go:generate go run go.uber.org/mock/mockgen -source=writer.go -destination=mocks/mock_writer.go -package=mocks
 type Writer interface {
 	CreatePermission(ctx context.Context, permission string) (*Permission, error)
 	DeletePermission(ctx context.Context, permission string) error

@@ -6,13 +6,13 @@ import (
 	"github.com/ooqls/getset/db/pgx"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/v1/permissions"
-	"github.com/ooqls/go-auth/v1/permissions/permissionsapi"
-	"github.com/ooqls/go-auth/v1/permissions/permissionsapi/gen_permissions"
+	permissionsapi "github.com/ooqls/go-auth/v1/permissions/api"
+	"github.com/ooqls/go-auth/v1/permissions/api/gen_permissions"
 )
 
 func NewPermissionsServer(ctx *app.AppContext) (gen_permissions.ServerInterface, error) {
-	cacheFactory, _ := ctx.CacheFactory()
-	factory := datav1.NewFactory(*pgx.GetPGX(), cacheFactory)
+	cacheFactory := ctx.CacheFactory()
+	factory := datav1.NewFactory(pgx.GetPGX(), cacheFactory)
 	permissionService := permissions.NewServiceImpl(factory)
 	return permissionsapi.NewPermissionsServer(permissionService, ctx.L()), nil
 }
@@ -23,7 +23,7 @@ func RegisterPermissionsHandlers(e *gin.Engine, server gen_permissions.ServerInt
 }
 
 func RegisterPermissionsDocsHandler(e *gin.Engine, _ gen_permissions.ServerInterface) {
-	g := e.Group("api/v1/")
+	g := e.Group("api/")
 	permissionsapi.RegisterDocsHandler(g)
 }
 

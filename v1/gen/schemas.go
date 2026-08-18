@@ -21,28 +21,35 @@ type DeleteResponse struct {
 
 // Permission defines model for Permission.
 type Permission struct {
-	CreatedAt  time.Time          `json:"created_at"`
-	Id         openapi_types.UUID `json:"id"`
-	Permission string             `json:"permission"`
-	UpdatedAt  time.Time          `json:"updated_at"`
+	CreatedAt  time.Time           `json:"created_at"`
+	Id         *openapi_types.UUID `json:"id,omitempty"`
+	Permission string              `json:"permission"`
+	UpdatedAt  time.Time           `json:"updated_at"`
 }
 
 // Resource defines model for Resource.
 type Resource struct {
-	CreatedAt time.Time          `json:"created_at"`
-	Id        openapi_types.UUID `json:"id"`
-	Name      string             `json:"name"`
-	UpdatedAt *time.Time         `json:"updated_at,omitempty"`
+	CreatedAt time.Time           `json:"created_at"`
+	Group     string              `json:"group"`
+	Id        *openapi_types.UUID `json:"id,omitempty"`
+	Kind      string              `json:"kind"`
+	Name      string              `json:"name"`
+	UpdatedAt *time.Time          `json:"updated_at,omitempty"`
 }
 
 // Role defines model for Role.
 type Role struct {
-	CreatedAt   time.Time          `json:"created_at"`
-	Description string             `json:"description"`
-	Hierarchy   int                `json:"hierarchy"`
-	Id          openapi_types.UUID `json:"id"`
-	Name        string             `json:"name"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	CreatedAt   time.Time           `json:"created_at"`
+	Description string              `json:"description"`
+	Hierarchy   int                 `json:"hierarchy"`
+	Id          *openapi_types.UUID `json:"id,omitempty"`
+	Name        string              `json:"name"`
+	UpdatedAt   time.Time           `json:"updated_at"`
+}
+
+// SearchRequest defines model for SearchRequest.
+type SearchRequest struct {
+	Permission string `json:"permission"`
 }
 
 // UpdateRequest defines model for UpdateRequest.
@@ -56,9 +63,9 @@ type UpdateRequest struct {
 
 // User defines model for User.
 type User struct {
-	CreatedAt time.Time          `json:"created_at"`
-	Email     string             `json:"email"`
-	Id        openapi_types.UUID `json:"id"`
-	UpdatedAt time.Time          `json:"updated_at"`
-	Username  string             `json:"username"`
+	CreatedAt time.Time           `json:"created_at"`
+	Email     string              `json:"email"`
+	Id        *openapi_types.UUID `json:"id,omitempty"`
+	UpdatedAt time.Time           `json:"updated_at"`
+	Username  string              `json:"username"`
 }

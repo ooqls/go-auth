@@ -12,6 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countRoles = `-- name: CountRoles :one
+SELECT COUNT(*) FROM rolesv1
+`
+
+func (q *Queries) CountRoles(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countRoles)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createRole = `-- name: CreateRole :one
 INSERT INTO rolesv1 (
   name,

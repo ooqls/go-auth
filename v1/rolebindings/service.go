@@ -3,6 +3,7 @@ package rolebindings
 import (
 	"github.com/google/uuid"
 	"github.com/ooqls/go-auth/internal/authorizationv1"
+	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/internal/rolebindingsv1"
 	"go.uber.org/zap"
 )
@@ -19,8 +20,12 @@ type ServiceImpl struct {
 	rw   rolebindingsv1.Writer
 }
 
-func NewServiceImpl(auth authorizationv1.Authorizer, rr rolebindingsv1.Reader, rw rolebindingsv1.Writer) *ServiceImpl {
-	return &ServiceImpl{auth: auth, rr: rr, rw: rw}
+func NewServiceImpl(data datav1.Factory) *ServiceImpl {
+	return &ServiceImpl{
+		auth: authorizationv1.NewAuthorizerImpl(data),
+		rr:   data.NewRoleBindingsReader(),
+		rw:   data.NewRoleBindingsWriter(),
+	}
 }
 
 func (s *ServiceImpl) GetRoleBindingsForUser(ctx *authorizationv1.Context, userId uuid.UUID) ([]rolebindingsv1.Rolebinding, error) {

@@ -13,83 +13,119 @@ services:
   resources:
     build:
       context: ../..
-      dockerfile: dockerfiles/base.dockerfile
+      dockerfile: dockerfiles/dev/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "resources", "--app-config", "/config/config/config.yaml"]
+    environment:
+      REMOTE_DEBUG_PORT: "2345"
+    ports:
+      - "2345:2345"
     volumes:
       - ./app:/config
       - ./migrations:/migrations
     depends_on:
-      - db
-      - valkey
-      - seed
+      db:
+        condition: service_started
+      valkey:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
   permissions:
     build:
       context: ../..
-      dockerfile: dockerfiles/base.dockerfile
+      dockerfile: dockerfiles/dev/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "permissions", "--app-config", "/config/config/config.yaml"]
+    environment:
+      REMOTE_DEBUG_PORT: "2346"
+    ports:
+      - "2346:2346"
     volumes:
       - ./app:/config
       - ./migrations:/migrations
     depends_on:
-      - db
-      - valkey
-      - seed
+      db:
+        condition: service_started
+      valkey:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
   roles:
     build:
       context: ../..
-      dockerfile: dockerfiles/base.dockerfile
+      dockerfile: dockerfiles/dev/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "roles", "--app-config", "/config/config/config.yaml"]
+    environment:
+      REMOTE_DEBUG_PORT: "2347"
+    ports:
+      - "2347:2347"
     volumes:
       - ./app:/config
       - ./migrations:/migrations
     depends_on:
-      - db
-      - valkey
-      - seed
+      db:
+        condition: service_started
+      valkey:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
   auth:
     build:
       context: ../..
-      dockerfile: dockerfiles/base.dockerfile
-    image: samrreynolds4/auth:main
+      dockerfile: dockerfiles/dev/base.dockerfile
+    image: samrreynolds4/base:main
     restart: unless-stopped
     command: ["/app/main", "--api", "authentication", "--app-config", "/config/config/config.yaml"]
+    environment:
+      REMOTE_DEBUG_PORT: "2348"
+    ports:
+      - "2348:2348"
     volumes:
       - ./app:/config
       - ./migrations:/migrations
     depends_on:
-      - db
-      - valkey
-      - seed
+      db:
+        condition: service_started
+      valkey:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
   users:
     build:
       context: ../..
-      dockerfile: dockerfiles/base.dockerfile
+      dockerfile: dockerfiles/dev/base.dockerfile
     image: samrreynolds4/base:main
     restart: unless-stopped
-    command: ["/app/main", "--api", "users", "--app-config", "/config/config/config.yaml"]
+    command: ["/app/run.sh", "--api", "users", "--app-config", "/config/config/config.yaml"]
+    environment:
+      REMOTE_DEBUG_PORT: "2349"
+    ports:
+      - "2349:2349"
     volumes:
       - ./app:/config
       - ./migrations:/migrations
     depends_on:
-      - db
-      - valkey
-      - seed
+      db:
+        condition: service_started
+      valkey:
+        condition: service_started
+      seed:
+        condition: service_completed_successfully
   seed:
     build:
       context: ../..
-      dockerfile: dockerfiles/base.dockerfile
+      dockerfile: dockerfiles/dev/base.dockerfile
     image: samrreynolds4/base:main
     restart: "no"
-    command: ["/app/main", "--api", "seed", "--app-config", "/config/config/config.yaml"]
+    command: ["/app/main", "--api", "seed", "--app-config", "/config/config/seed.yaml"]
     volumes:
       - ./app:/config
       - ./migrations:/migrations
+      - ./seed:/seed
     depends_on:
       - db
       - valkey

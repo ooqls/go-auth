@@ -13,5 +13,6 @@ type RoleAgg struct {
 
 type UserAgg struct {
 	usersv1.User
+	Hash  string    `json:"hash"`
 	Roles []RoleAgg `json:"roles"`
 }

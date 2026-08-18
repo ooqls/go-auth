@@ -17,10 +17,13 @@ var _ Service = &ServiceImpl{}
 type Service interface {
 	CreateResource(ctx *authorizationv1.Context, group, kind, name string) (*Resourcev1, error)
 	GetResource(ctx *authorizationv1.Context, group, kind, name string) (*Resourcev1, error)
-	GetResources(ctx *authorizationv1.Context, group, kind *string, page, pageSize int32) ([]Resourcev1, error)
+	GetResources(ctx *authorizationv1.Context, group, kind *string, page, pageSize int32) (*corev1.Result[[]Resourcev1], error)
+	SearchResources(ctx *authorizationv1.Context, group, kind, name, query *string) (*corev1.Result[[]Resourcev1], error)
 	UpdateResourceName(ctx *authorizationv1.Context, group, kind, name string, newName string) (*Resourcev1, error)
 	DeleteResource(ctx *authorizationv1.Context, group, kind, name string) error
 }
+
+const defaultSearchPageSize = 100
 
 type ServiceImpl struct {
 	rr resourcesv1.Reader
@@ -37,10 +40,7 @@ func NewServiceImpl(factory datav1.Factory) Service {
 }
 
 func (s *ServiceImpl) CreateResource(ctx *authorizationv1.Context, group, kind, name string) (*Resourcev1, error) {
-	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.CreateAction, corev1.ToTargetString(corev1.Metadata{
-		Group: group,
-		Kind:  kind,
-	})); err != nil {
+	if err := s.ra.IsAuthorizedToPerformResourceAction(ctx, authorizationv1.CreateAction, group, kind); err != nil {
 		return nil, v1.ErrPermissionDenied(err, v1.M{"group": group, "kind": kind})
 	}
 
@@ -49,12 +49,15 @@ func (s *ServiceImpl) CreateResource(ctx *authorizationv1.Context, group, kind, 
 		return nil, v1.ErrInternal(err, v1.M{"group": group, "kind": kind, "name": name})
 	}
 
+	if err := s.rr.ClearCache(ctx); err != nil {
+		ctx.L().Warn("failed to clear cache", zap.Error(err))
+	}
+
 	return res, nil
 }
 
 func (s *ServiceImpl) GetResource(ctx *authorizationv1.Context, group, kind, name string) (*Resourcev1, error) {
-	target := corev1.ToTargetString(corev1.Metadata{Group: group, Kind: kind})
-	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, target); err != nil {
+	if err := s.ra.IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, group, kind); err != nil {
 		return nil, v1.ErrPermissionDenied(err, v1.M{"group": group, "kind": kind, "name": name})
 	}
 
@@ -67,8 +70,7 @@ func (s *ServiceImpl) GetResource(ctx *authorizationv1.Context, group, kind, nam
 }
 
 func (s *ServiceImpl) UpdateResourceName(ctx *authorizationv1.Context, group, kind, name, newName string) (*Resourcev1, error) {
-	target := corev1.ToTargetString(corev1.Metadata{Group: group, Kind: kind})
-	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.UpdateAction, target); err != nil {
+	if err := s.ra.IsAuthorizedToPerformResourceAction(ctx, authorizationv1.UpdateAction, group, kind); err != nil {
 		return nil, v1.ErrPermissionDenied(err, v1.M{
 			"group": group,
 			"kind":  kind,
@@ -114,10 +116,7 @@ func (s *ServiceImpl) UpdateResourceName(ctx *authorizationv1.Context, group, ki
 }
 
 func (s *ServiceImpl) DeleteResource(ctx *authorizationv1.Context, group, kind, name string) error {
-	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.DeleteAction, corev1.ToTargetString(corev1.Metadata{
-		Group: group,
-		Kind:  kind,
-	})); err != nil {
+	if err := s.ra.IsAuthorizedToPerformResourceAction(ctx, authorizationv1.DeleteAction, group, kind); err != nil {
 		return v1.ErrPermissionDenied(err, v1.M{"group": group, "kind": kind, "name": name})
 	}
 
@@ -140,7 +139,7 @@ func (s *ServiceImpl) DeleteResourceByName(ctx *authorizationv1.Context, group, 
 	return s.rw.DeleteResource(ctx, group, kind, name)
 }
 
-func (s *ServiceImpl) GetResources(ctx *authorizationv1.Context, group, kind *string, page, pageSize int32) ([]Resourcev1, error) {
+func (s *ServiceImpl) SearchResources(ctx *authorizationv1.Context, group, kind, name, query *string) (*corev1.Result[[]Resourcev1], error) {
 	targetGroup := "*"
 	targetKind := "*"
 
@@ -152,18 +151,37 @@ func (s *ServiceImpl) GetResources(ctx *authorizationv1.Context, group, kind *st
 		targetKind = *kind
 	}
 
-	target := corev1.ToTargetString(corev1.Metadata{Group: targetGroup, Kind: targetKind})
-	if err := s.ra.IsAuthorizedToPerformAction(ctx, authorizationv1.ReadAction, target); err != nil {
+	if err := s.ra.IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, targetGroup, targetKind); err != nil {
+		return nil, v1.ErrPermissionDenied(err, v1.M{"group": targetGroup, "kind": targetKind})
+	}
+
+	return s.rr.SearchResources(ctx, group, kind, name, query, defaultSearchPageSize, 0)
+}
+
+func (s *ServiceImpl) GetResources(ctx *authorizationv1.Context, group, kind *string, page, pageSize int32) (*corev1.Result[[]Resourcev1], error) {
+	targetGroup := "*"
+	targetKind := "*"
+
+	if group != nil {
+		targetGroup = *group
+	}
+
+	if kind != nil {
+		targetKind = *kind
+	}
+
+	target := ToTargetString(targetGroup, targetKind)
+	ctx.L().Info("attempting to read reosurces", zap.String("target", target))
+	if err := s.ra.IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, targetGroup, targetKind); err != nil {
 		return nil, err
 	}
-
+	offset := max(0, (page-1)*pageSize)
 	switch {
 	case group != nil && kind != nil:
-		return s.rr.GetResourcesByGroupAndKind(ctx, *group, *kind, pageSize, (page-1)*pageSize)
+		return s.rr.GetResourcesByGroupAndKind(ctx, *group, *kind, pageSize, offset)
 	case group != nil:
-		return s.rr.GetResourcesByGroup(ctx, *group, pageSize, (page-1)*pageSize)
+		return s.rr.GetResourcesByGroup(ctx, *group, pageSize, offset)
 	default:
-		return s.rr.GetResources(ctx, pageSize, (page-1)*pageSize)
+		return s.rr.GetResources(ctx, pageSize, offset)
 	}
-
 }

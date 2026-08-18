@@ -20,16 +20,16 @@ func GetStandaloneAppConfig(port int) *app.AppConfig {
 
 		Gin: app.GinConfig{
 			Enabled: true,
-			Port:    8080,
+			Port:    port,
 			Cors: app.CorsConfig{
 				Enabled:             true,
 				AllowMethods:        []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-				AllowWildcard:       true,
 				AllowCredentials:    true,
-				AllowAllOrigins:     true,
+				AllowOrigins:        []string{"http://localhost:5173", "http://localhost:8080", "http://localhost:3000"},
+				AllowWildcard:       true,
 				AllowPrivateNetwork: true,
-				ExposeHeaders:       []string{"Content-Type", "Authorization"},
-				Headers:             []string{"Content-Type", "Authorization"},
+				ExposeHeaders:       []string{"Origin", "Content-Type", "Authorization", "X-User-Id"},
+				Headers:             []string{"Origin", "Content-Type", "Authorization", "X-User-Id"},
 				MaxAge:              12,
 			},
 		},
@@ -53,11 +53,11 @@ func GetStandaloneAppConfig(port int) *app.AppConfig {
 		},
 		Cache: app.CacheConfig{
 			Enabled:   true,
-			CacheType: "mem",
+			CacheType: "valkey",
 		},
 		DocsConfig: app.DocsConfig{
 			Enabled:     true,
-			DocsApiPath: "/api/v1/docs",
+			DocsApiPath: "/api/docs",
 		},
 	}
 }

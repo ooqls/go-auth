@@ -35,7 +35,7 @@ type AuthedResult struct {
 	User        *usersv1.User `json:"user"`
 }
 
-//go:generate go run github.com/golang/mock/mockgen -source=challenger.go -destination=mocks/mock_challenger.go -package=mocks -mock_names=Challenger=MockChallenger
+//go:generate go run go.uber.org/mock/mockgen -source=challenger.go -destination=mocks/mock_challenger.go -package=mocks -mock_names=Challenger=MockChallenger
 type Challenger interface {
 	IssueChallenge(ctx contexts.LContext, user *usersv1.User) (*Challenge, error)
 	VerifyChallenge(ctx contexts.LContext, challengeId uuid.UUID, solvedChallenge []byte) (*AuthedResult, error)
@@ -91,21 +91,19 @@ func (c *ChallengerV1) VerifyChallenge(ctx contexts.LContext, challengeId uuid.U
 	logger := loggerFrom(ctx)
 	var challenge Challenge
 	logger.Info("verifying challenge", zap.String("challenge_id", challengeId.String()))
+	logger.Info("getting challenge from cache")
 	err := c.store.Get(ctx, challengeId.String(), &challenge)
 	if err != nil {
 		if cache.IsCacheMissErr(err) {
+			logger.Info("challenge is not found in cache", zap.String("challenge_id", challengeId.String()))
 			return nil, ErrChallengeExpired
 		}
 
 		logger.Error("failed to get challenge from store", zap.String("challenge_id", challengeId.String()), zap.Error(err))
 		return nil, v1.ErrInternal(err, v1.M{"challenge_id": challengeId.String()})
 	}
-	logger.Info("decrypting challenge",
-		zap.Any("solvedChallenge", solvedChallenge),
-		zap.Any("challenge", challenge.Challenge),
-		zap.Binary("userKey", challenge.User.Key),
-	)
 
+	logger.Info("decrypting challenge")
 	decryptedChallenge, err := crypto.AESGCMDecryptWithKey(challenge.User.Key, solvedChallenge)
 	if err != nil {
 		logger.Warn("failed to decrypt given challenge with user key", zap.Error(err))
@@ -115,9 +113,11 @@ func (c *ChallengerV1) VerifyChallenge(ctx contexts.LContext, challengeId uuid.U
 	authed := bytes.Equal(decryptedChallenge, challenge.Challenge)
 
 	if !authed {
+		logger.Info("authentication failed")
 		return nil, ErrChallengeFailed
 	}
 
+	logger.Info("deleting challenge from cache")
 	err = c.store.Delete(ctx, challengeId.String())
 	if err != nil {
 		logger.Error("failed to delete challenge from store", zap.String("challenge_id", challengeId.String()), zap.Error(err))
