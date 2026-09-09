@@ -89,10 +89,10 @@ func (mr *MockReaderMockRecorder) GetPermissions(ctx, page, pageSize any) *gomoc
 }
 
 // GetPermissionsForUser mocks base method.
-func (m *MockReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) ([]permissionsv1.Permission, error) {
+func (m *MockReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) (*corev1.Result[[]permissionsv1.Permission], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPermissionsForUser", ctx, userID)
-	ret0, _ := ret[0].([]permissionsv1.Permission)
+	ret0, _ := ret[0].(*corev1.Result[[]permissionsv1.Permission])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -104,10 +104,10 @@ func (mr *MockReaderMockRecorder) GetPermissionsForUser(ctx, userID any) *gomock
 }
 
 // GetPermissionsForUserByGroup mocks base method.
-func (m *MockReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) ([]permissionsv1.Permission, error) {
+func (m *MockReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) (*corev1.Result[[]permissionsv1.Permission], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPermissionsForUserByGroup", ctx, userID)
-	ret0, _ := ret[0].([]permissionsv1.Permission)
+	ret0, _ := ret[0].(*corev1.Result[[]permissionsv1.Permission])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -149,16 +149,16 @@ func (mr *MockReaderMockRecorder) HasResourcePermission(ctx, userID, group, kind
 }
 
 // SearchPermissions mocks base method.
-func (m *MockReader) SearchPermissions(ctx contexts.LContext, permission string) ([]string, error) {
+func (m *MockReader) SearchPermissions(ctx contexts.LContext, permission string, page, pageSize int) (*corev1.Result[[]permissionsv1.Permission], error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchPermissions", ctx, permission)
-	ret0, _ := ret[0].([]string)
+	ret := m.ctrl.Call(m, "SearchPermissions", ctx, permission, page, pageSize)
+	ret0, _ := ret[0].(*corev1.Result[[]permissionsv1.Permission])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SearchPermissions indicates an expected call of SearchPermissions.
-func (mr *MockReaderMockRecorder) SearchPermissions(ctx, permission any) *gomock.Call {
+func (mr *MockReaderMockRecorder) SearchPermissions(ctx, permission, page, pageSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPermissions", reflect.TypeOf((*MockReader)(nil).SearchPermissions), ctx, permission)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPermissions", reflect.TypeOf((*MockReader)(nil).SearchPermissions), ctx, permission, page, pageSize)
 }

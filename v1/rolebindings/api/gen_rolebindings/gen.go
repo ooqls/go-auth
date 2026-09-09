@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	BearerAuthScopes = "bearerAuth.Scopes"
+	CookieAuthScopes = "cookieAuth.Scopes"
 )
 
 // AssignRoleRequest Request body for assigning one or more roles to one or more users.
@@ -766,7 +766,7 @@ type MiddlewareFunc func(c *gin.Context)
 // UnassignRole operation middleware
 func (siw *ServerInterfaceWrapper) UnassignRole(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -783,7 +783,7 @@ func (siw *ServerInterfaceWrapper) GetAllRoleBindings(c *gin.Context) {
 
 	var err error
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetAllRoleBindingsParams
@@ -817,7 +817,7 @@ func (siw *ServerInterfaceWrapper) GetAllRoleBindings(c *gin.Context) {
 // AssignRole operation middleware
 func (siw *ServerInterfaceWrapper) AssignRole(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -843,7 +843,7 @@ func (siw *ServerInterfaceWrapper) GetRolebindingsForUser(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)

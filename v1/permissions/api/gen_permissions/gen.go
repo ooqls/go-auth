@@ -19,17 +19,17 @@ import (
 )
 
 const (
-	BearerAuthScopes = "bearerAuth.Scopes"
+	CookieAuthScopes = "cookieAuth.Scopes"
 )
 
 // CreateRequest defines model for CreateRequest.
 type CreateRequest struct {
-	Permission externalRef0.Permission `json:"permission"`
+	Permission string `json:"permission"`
 }
 
 // CreateResponse defines model for CreateResponse.
 type CreateResponse struct {
-	Permission externalRef0.Permission `json:"permission"`
+	Permission string `json:"permission"`
 }
 
 // PermissionList defines model for PermissionList.
@@ -864,7 +864,7 @@ type MiddlewareFunc func(c *gin.Context)
 // DeletePermission operation middleware
 func (siw *ServerInterfaceWrapper) DeletePermission(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -881,7 +881,7 @@ func (siw *ServerInterfaceWrapper) ListPermissions(c *gin.Context) {
 
 	var err error
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListPermissionsParams
@@ -915,7 +915,7 @@ func (siw *ServerInterfaceWrapper) ListPermissions(c *gin.Context) {
 // CreatePermission operation middleware
 func (siw *ServerInterfaceWrapper) CreatePermission(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -930,7 +930,7 @@ func (siw *ServerInterfaceWrapper) CreatePermission(c *gin.Context) {
 // ListMyPermissions operation middleware
 func (siw *ServerInterfaceWrapper) ListMyPermissions(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -945,7 +945,7 @@ func (siw *ServerInterfaceWrapper) ListMyPermissions(c *gin.Context) {
 // SearchPermissions operation middleware
 func (siw *ServerInterfaceWrapper) SearchPermissions(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)

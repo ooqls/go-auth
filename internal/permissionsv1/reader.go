@@ -17,16 +17,25 @@ import (
 
 var _ Reader = &SQLReader{}
 
+// cacheKeyAllPermissions caches the full permission set as a single entry so
+// pagination happens in-memory and there is one key to invalidate on write,
+// instead of one entry per distinct (page, pageSize) combination.
+const cacheKeyAllPermissions = "permissions:all"
+
+func permissionCacheKey(permission string) string {
+	return fmt.Sprintf("permission:%s", permission)
+}
+
 //go:generate go run go.uber.org/mock/mockgen -source=reader.go -destination=mocks/mock_reader.go -package=mocks
 type Reader interface {
 	GetPermissions(ctx contexts.LContext, page, pageSize int) (*corev1.Result[[]Permission], error)
 	GetPermission(ctx contexts.LContext, permission string) (*Permission, error)
-	SearchPermissions(ctx contexts.LContext, permission string) ([]string, error)
+	SearchPermissions(ctx contexts.LContext, permission string, page, pageSize int) (*corev1.Result[[]Permission], error)
 	HasCorePermission(ctx contexts.LContext, userID uuid.UUID, group, kind, action string) (bool, error)
 	HasResourcePermission(ctx contexts.LContext, userID uuid.UUID, group, kind, action string) (bool, error)
 
-	GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error)
-	GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error)
+	GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) (*corev1.Result[[]Permission], error)
+	GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) (*corev1.Result[[]Permission], error)
 	ClearCache(ctx context.Context) error
 }
 
@@ -42,46 +51,61 @@ type SQLReader struct {
 	q     *datagen.Queries
 }
 
-func (r *SQLReader) SearchPermissions(ctx contexts.LContext, permission string) ([]string, error) {
-	var items []string
-	err := r.cache.Get(ctx, "search_permissions:"+permission, &items)
-	if err == nil {
-		return items, nil
+func (r *SQLReader) SearchPermissions(ctx contexts.LContext, permission string, page int, pageSize int) (*corev1.Result[[]Permission], error) {
+
+	page = max(page, 1)
+	pageSize = max(pageSize, 1)
+
+	offset := (page - 1) * pageSize
+
+	items, err := r.q.SearchPermissions(ctx, datagen.SearchPermissionsParams{
+		Permission: "%" + permission + "%",
+		Limit:      int32(pageSize), // or any default limit you want to set
+		Offset:     int32(offset),
+	})
+	if err != nil {
+		return nil, v1.ErrInternal(err, v1.M{})
 	}
 
-	items, err = r.q.SearchPermissions(ctx, "%"+permission+"%")
+	count, err := r.q.CountSearchPermissions(ctx, "%"+permission+"%")
 	if err != nil {
-		return nil, err
+		return nil, v1.ErrInternal(err, v1.M{})
 	}
-	err = r.cache.Set(ctx, "search_permissions:"+permission, items)
-	if err != nil {
-		return nil, err
+
+	var perms []Permission
+	for _, p := range items {
+		perms = append(perms, Permission{
+			Metadata:   corev1.PermissionsV1,
+			Permission: p,
+		})
 	}
-	return items, nil
+	return &corev1.Result[[]Permission]{Items: perms, TotalCount: count}, nil
 }
 
 func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) (*corev1.Result[[]Permission], error) {
-	cacheKey := fmt.Sprintf("permissions:%d:%d", page, pageSize)
-
-	if cached := r.getCache(ctx, cacheKey); cached != nil {
-		total, err := r.q.CountPermissions(ctx)
-		if err != nil {
-			return nil, v1.ErrInternal(err, v1.M{"page": page, "pageSize": pageSize})
-		}
-		return &corev1.Result[[]Permission]{Items: cached, TotalCount: total}, nil
+	perms, err := r.getAllPermissions(ctx)
+	if err != nil {
+		return nil, v1.ErrInternal(err, v1.M{})
 	}
 
-	rows, err := r.q.GetPermissions(ctx, datagen.GetPermissionsParams{
-		Limit:  int32(pageSize),
-		Offset: int32((page - 1) * pageSize),
-	})
-	if err != nil {
-		return nil, v1.ErrInternal(err, v1.M{"page": page, "pageSize": pageSize})
+	total := len(perms)
+	start := min(max((page-1)*pageSize, 0), total)
+	end := min(start+pageSize, total)
+	var permArr []Permission
+	for _, p := range perms {
+		permArr = append(permArr, p)
+	}
+	return &corev1.Result[[]Permission]{Items: permArr[start:end], TotalCount: int64(total)}, nil
+}
+
+func (r *SQLReader) getAllPermissions(ctx contexts.LContext) ([]Permission, error) {
+	if cached := r.getCache(ctx, cacheKeyAllPermissions); cached != nil {
+		return cached, nil
 	}
 
-	total, err := r.q.CountPermissions(ctx)
+	rows, err := r.q.GetAllPermissions(ctx)
 	if err != nil {
-		return nil, v1.ErrInternal(err, v1.M{"page": page, "pageSize": pageSize})
+		return nil, v1.ErrInternal(err, nil)
 	}
 
 	var perms []Permission
@@ -93,16 +117,16 @@ func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) (*
 	}
 
 	if r.cache != nil {
-		if err := r.cache.Set(ctx, cacheKey, perms); err != nil {
+		if err := r.cache.Set(ctx, cacheKeyAllPermissions, perms); err != nil {
 			ctx.L().Error("failed to set cache", zap.Error(err))
 		}
 	}
 
-	return &corev1.Result[[]Permission]{Items: perms, TotalCount: total}, nil
+	return perms, nil
 }
 
 func (r *SQLReader) GetPermission(ctx contexts.LContext, permission string) (*Permission, error) {
-	cacheKey := fmt.Sprintf("permission:%s", permission)
+	cacheKey := permissionCacheKey(permission)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
 		return &cached[0], nil
@@ -148,11 +172,11 @@ func (r *SQLReader) HasCorePermission(ctx contexts.LContext, userID uuid.UUID, g
 	})
 }
 
-func (r *SQLReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error) {
+func (r *SQLReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID uuid.UUID) (*corev1.Result[[]Permission], error) {
 	cacheKey := fmt.Sprintf("permissions:user:%s:bygroup", userID)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
-		return cached, nil
+		return &corev1.Result[[]Permission]{Items: cached, TotalCount: int64(len(cached))}, nil
 	}
 
 	rows, err := r.q.GetPermissionsForUserByGroup(ctx, userID)
@@ -174,14 +198,14 @@ func (r *SQLReader) GetPermissionsForUserByGroup(ctx contexts.LContext, userID u
 		}
 	}
 
-	return perms, nil
+	return &corev1.Result[[]Permission]{Items: perms, TotalCount: int64(len(perms))}, nil
 }
 
-func (r *SQLReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) ([]Permission, error) {
+func (r *SQLReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUID) (*corev1.Result[[]Permission], error) {
 	cacheKey := fmt.Sprintf("permissions:user:%s", userID)
 
 	if cached := r.getCache(ctx, cacheKey); cached != nil {
-		return cached, nil
+		return &corev1.Result[[]Permission]{Items: cached, TotalCount: int64(len(cached))}, nil
 	}
 
 	rows, err := r.q.GetPermissionsForUser(ctx, userID)
@@ -203,7 +227,7 @@ func (r *SQLReader) GetPermissionsForUser(ctx contexts.LContext, userID uuid.UUI
 		}
 	}
 
-	return perms, nil
+	return &corev1.Result[[]Permission]{Items: perms, TotalCount: int64(len(perms))}, nil
 }
 
 func (r *SQLReader) getCache(ctx contexts.LContext, keys ...string) []Permission {

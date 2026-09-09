@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	BearerAuthScopes = "bearerAuth.Scopes"
+	CookieAuthScopes = "cookieAuth.Scopes"
 )
 
 // AssignPermissionRequest defines model for AssignPermissionRequest.
@@ -1326,7 +1326,7 @@ type MiddlewareFunc func(c *gin.Context)
 // DeleteAuthRole operation middleware
 func (siw *ServerInterfaceWrapper) DeleteAuthRole(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1341,7 +1341,7 @@ func (siw *ServerInterfaceWrapper) DeleteAuthRole(c *gin.Context) {
 // CreateAuthRole operation middleware
 func (siw *ServerInterfaceWrapper) CreateAuthRole(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1356,7 +1356,7 @@ func (siw *ServerInterfaceWrapper) CreateAuthRole(c *gin.Context) {
 // UpdateAuthRole operation middleware
 func (siw *ServerInterfaceWrapper) UpdateAuthRole(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1371,7 +1371,7 @@ func (siw *ServerInterfaceWrapper) UpdateAuthRole(c *gin.Context) {
 // UpdateRoleBindings operation middleware
 func (siw *ServerInterfaceWrapper) UpdateRoleBindings(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1386,7 +1386,7 @@ func (siw *ServerInterfaceWrapper) UpdateRoleBindings(c *gin.Context) {
 // UnassignRolePermissions operation middleware
 func (siw *ServerInterfaceWrapper) UnassignRolePermissions(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1401,7 +1401,7 @@ func (siw *ServerInterfaceWrapper) UnassignRolePermissions(c *gin.Context) {
 // AssignRolePermissions operation middleware
 func (siw *ServerInterfaceWrapper) AssignRolePermissions(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1427,7 +1427,7 @@ func (siw *ServerInterfaceWrapper) GetAuthRole(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1444,7 +1444,7 @@ func (siw *ServerInterfaceWrapper) GetAuthRoles(c *gin.Context) {
 
 	var err error
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetAuthRolesParams

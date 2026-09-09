@@ -13,14 +13,6 @@
  */
 
 import { mapValues } from '../runtime';
-import type { Permission } from './Permission';
-import {
-    PermissionFromJSON,
-    PermissionFromJSONTyped,
-    PermissionToJSON,
-    PermissionToJSONTyped,
-} from './Permission';
-
 /**
  * 
  * @export
@@ -29,10 +21,10 @@ import {
 export interface CreateResponse {
     /**
      * 
-     * @type {Permission}
+     * @type {string}
      * @memberof CreateResponse
      */
-    permission: Permission;
+    permission: string;
 }
 
 /**
@@ -53,7 +45,7 @@ export function CreateResponseFromJSONTyped(json: any, ignoreDiscriminator: bool
     }
     return {
         
-        'permission': PermissionFromJSON(json['permission']),
+        'permission': json['permission'],
     };
 }
 
@@ -68,7 +60,7 @@ export function CreateResponseToJSONTyped(value?: CreateResponse | null, ignoreD
 
     return {
         
-        'permission': PermissionToJSON(value['permission']),
+        'permission': value['permission'],
     };
 }
 

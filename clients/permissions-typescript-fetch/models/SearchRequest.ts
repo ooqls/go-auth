@@ -25,6 +25,18 @@ export interface SearchRequest {
      * @memberof SearchRequest
      */
     permission: string;
+    /**
+     * 
+     * @type {number}
+     * @memberof SearchRequest
+     */
+    page?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof SearchRequest
+     */
+    pageSize?: number;
 }
 
 /**
@@ -46,6 +58,8 @@ export function SearchRequestFromJSONTyped(json: any, ignoreDiscriminator: boole
     return {
         
         'permission': json['permission'],
+        'page': json['page'] == null ? undefined : json['page'],
+        'pageSize': json['pageSize'] == null ? undefined : json['pageSize'],
     };
 }
 
@@ -61,6 +75,8 @@ export function SearchRequestToJSONTyped(value?: SearchRequest | null, ignoreDis
     return {
         
         'permission': value['permission'],
+        'page': value['page'],
+        'pageSize': value['pageSize'],
     };
 }
 

@@ -35,14 +35,14 @@ components:
                 - permission
             properties:
                 permission:
-                    $ref: "schemas.yaml#/components/schemas/Permission"
+                    type: string
         CreateResponse:
             type: object
             required:
                 - permission
             properties:
                 permission:
-                    $ref: "schemas.yaml#/components/schemas/Permission"
+                    type: string
 paths:
     /permission:
         get:

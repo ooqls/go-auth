@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	BearerAuthScopes = "bearerAuth.Scopes"
+	CookieAuthScopes = "cookieAuth.Scopes"
 )
 
 // CreateResourceRequest defines model for CreateResourceRequest.
@@ -1086,7 +1086,7 @@ func (siw *ServerInterfaceWrapper) ListResources(c *gin.Context) {
 
 	var err error
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ListResourcesParams
@@ -1144,7 +1144,7 @@ func (siw *ServerInterfaceWrapper) ListResources(c *gin.Context) {
 // CreateResource operation middleware
 func (siw *ServerInterfaceWrapper) CreateResource(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1159,7 +1159,7 @@ func (siw *ServerInterfaceWrapper) CreateResource(c *gin.Context) {
 // UpdateResource operation middleware
 func (siw *ServerInterfaceWrapper) UpdateResource(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1174,7 +1174,7 @@ func (siw *ServerInterfaceWrapper) UpdateResource(c *gin.Context) {
 // PostResourceSearch operation middleware
 func (siw *ServerInterfaceWrapper) PostResourceSearch(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1218,7 +1218,7 @@ func (siw *ServerInterfaceWrapper) DeleteResource(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1262,7 +1262,7 @@ func (siw *ServerInterfaceWrapper) GetResource(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)

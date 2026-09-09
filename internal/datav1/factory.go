@@ -118,8 +118,9 @@ func (f *SQLFactory) NewPermissionReader() permissionsv1.Reader {
 }
 
 func (f *SQLFactory) NewPermissionWriter() permissionsv1.Writer {
+	cache := f.cacheFactory.NewCache("permissions", time.Hour*24)
 	queries := permissionsdatagen.New(f.db)
-	return permissionsv1.NewSQLWriter(queries)
+	return permissionsv1.NewSQLWriter(&cache, queries)
 }
 
 func (f *SQLFactory) NewPermissionBindingReader() permissionbindingsv1.Reader {

@@ -2,6 +2,9 @@
 -- name: GetPermissions :many
 SELECT * FROM permissionsv1 ORDER BY permission LIMIT $1 OFFSET $2;
 
+-- name: GetAllPermissions :many
+SELECT * FROM permissionsv1 ORDER BY permission;
+
 -- name: GetPermissionById :one
 SELECT * FROM permissionsv1 WHERE permission = $1;
 
@@ -90,5 +93,11 @@ WHERE rb.user_id = $1;
 -- name: SearchPermissions :many
 SELECT
   p.permission AS permission
+FROM permissionsv1 p
+WHERE p.permission LIKE $1
+LIMIT $2 OFFSET $3;
+
+-- name: CountSearchPermissions :one
+SELECT COUNT(*)
 FROM permissionsv1 p
 WHERE p.permission LIKE $1;

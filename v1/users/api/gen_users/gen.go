@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	BearerAuthScopes = "bearerAuth.Scopes"
+	CookieAuthScopes = "cookieAuth.Scopes"
 )
 
 // CreateUserRequest defines model for CreateUserRequest.
@@ -940,7 +940,7 @@ type MiddlewareFunc func(c *gin.Context)
 // GetCurrentUser operation middleware
 func (siw *ServerInterfaceWrapper) GetCurrentUser(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -955,7 +955,7 @@ func (siw *ServerInterfaceWrapper) GetCurrentUser(c *gin.Context) {
 // CreateUser operation middleware
 func (siw *ServerInterfaceWrapper) CreateUser(c *gin.Context) {
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -981,7 +981,7 @@ func (siw *ServerInterfaceWrapper) DeleteUserByID(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1007,7 +1007,7 @@ func (siw *ServerInterfaceWrapper) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1033,7 +1033,7 @@ func (siw *ServerInterfaceWrapper) UpdateUserByID(c *gin.Context) {
 		return
 	}
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	for _, middleware := range siw.HandlerMiddlewares {
 		middleware(c)
@@ -1050,7 +1050,7 @@ func (siw *ServerInterfaceWrapper) GetUsers(c *gin.Context) {
 
 	var err error
 
-	c.Set(BearerAuthScopes, []string{})
+	c.Set(CookieAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetUsersParams

@@ -22,6 +22,19 @@ func (q *Queries) CountPermissions(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countSearchPermissions = `-- name: CountSearchPermissions :one
+SELECT COUNT(*)
+FROM permissionsv1 p
+WHERE p.permission LIKE $1
+`
+
+func (q *Queries) CountSearchPermissions(ctx context.Context, permission string) (int64, error) {
+	row := q.db.QueryRow(ctx, countSearchPermissions, permission)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPermission = `-- name: CreatePermission :one
 INSERT INTO permissionsv1 (
   permission
@@ -43,6 +56,30 @@ DELETE FROM permissionsv1 WHERE permission = $1
 func (q *Queries) DeletePermission(ctx context.Context, permission string) error {
 	_, err := q.db.Exec(ctx, deletePermission, permission)
 	return err
+}
+
+const getAllPermissions = `-- name: GetAllPermissions :many
+SELECT permission FROM permissionsv1 ORDER BY permission
+`
+
+func (q *Queries) GetAllPermissions(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, getAllPermissions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var permission string
+		if err := rows.Scan(&permission); err != nil {
+			return nil, err
+		}
+		items = append(items, permission)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getOrCreatePermission = `-- name: GetOrCreatePermission :one
@@ -254,10 +291,17 @@ SELECT
   p.permission AS permission
 FROM permissionsv1 p
 WHERE p.permission LIKE $1
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) SearchPermissions(ctx context.Context, permission string) ([]string, error) {
-	rows, err := q.db.Query(ctx, searchPermissions, permission)
+type SearchPermissionsParams struct {
+	Permission string
+	Limit      int32
+	Offset     int32
+}
+
+func (q *Queries) SearchPermissions(ctx context.Context, arg SearchPermissionsParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, searchPermissions, arg.Permission, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

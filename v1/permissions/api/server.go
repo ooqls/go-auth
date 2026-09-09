@@ -66,7 +66,7 @@ func (p *PermissionsServer) CreatePermission(ctx *gin.Context) {
 		return
 	}
 
-	if err := p.service.AddPermission(authCtx, req.Permission.Permission); err != nil {
+	if err := p.service.AddPermission(authCtx, req.Permission); err != nil {
 		v1.GinHandleError(ctx, err)
 		return
 	}
@@ -99,7 +99,7 @@ func (p *PermissionsServer) SearchPermissions(ctx *gin.Context) {
 		return
 	}
 
-	results, err := p.service.SearchPermissions(authCtx, req.Permission)
+	results, err := p.service.SearchPermissions(authCtx, req.Permission, 1, 100)
 	if err != nil {
 		v1.GinHandleError(ctx, err)
 		return
@@ -121,7 +121,7 @@ func (p *PermissionsServer) ListMyPermissions(ctx *gin.Context) {
 		return
 	}
 	permArr := []string{}
-	for _, p := range perms {
+	for _, p := range perms.Items {
 		permArr = append(permArr, p.Permission)
 	}
 
