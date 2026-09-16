@@ -133,8 +133,6 @@ paths:
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    type: string
+                                $ref: "#/components/schemas/PermissionList"
                 "401":
                     description: Invalid credentials

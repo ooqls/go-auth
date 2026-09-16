@@ -99,13 +99,25 @@ func (p *PermissionsServer) SearchPermissions(ctx *gin.Context) {
 		return
 	}
 
-	results, err := p.service.SearchPermissions(authCtx, req.Permission, 1, 100)
+	page := 1
+	pageSize := 100
+	if req.Page != nil {
+		page = int(*req.Page)
+	}
+	if req.PageSize != nil {
+		pageSize = int(*req.PageSize)
+	}
+
+	results, err := p.service.SearchPermissions(authCtx, req.Permission, page, pageSize)
 	if err != nil {
 		v1.GinHandleError(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, results)
+	ctx.JSON(http.StatusOK, gen_permissions.PermissionList{
+		Items:      toGenPermissionList(results.Items),
+		TotalCount: int(results.TotalCount),
+	})
 }
 
 func (p *PermissionsServer) ListMyPermissions(ctx *gin.Context) {

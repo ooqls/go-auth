@@ -88,14 +88,13 @@ func (r *SQLReader) GetPermissions(ctx contexts.LContext, page, pageSize int) (*
 		return nil, v1.ErrInternal(err, v1.M{})
 	}
 
+	page = max(page, 1)
+	pageSize = max(pageSize, 1)
+
 	total := len(perms)
-	start := min(max((page-1)*pageSize, 0), total)
+	start := min((page-1)*pageSize, total)
 	end := min(start+pageSize, total)
-	var permArr []Permission
-	for _, p := range perms {
-		permArr = append(permArr, p)
-	}
-	return &corev1.Result[[]Permission]{Items: permArr[start:end], TotalCount: int64(total)}, nil
+	return &corev1.Result[[]Permission]{Items: perms[start:end], TotalCount: int64(total)}, nil
 }
 
 func (r *SQLReader) getAllPermissions(ctx contexts.LContext) ([]Permission, error) {

@@ -134,3 +134,7 @@ components:
             properties:
                 permission:
                     type: string
+                page:
+                    type: number
+                pageSize:
+                    type: number

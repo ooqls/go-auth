@@ -49,7 +49,9 @@ type Role struct {
 
 // SearchRequest defines model for SearchRequest.
 type SearchRequest struct {
-	Permission string `json:"permission"`
+	Page       *float32 `json:"page,omitempty"`
+	PageSize   *float32 `json:"pageSize,omitempty"`
+	Permission string   `json:"permission"`
 }
 
 // UpdateRequest defines model for UpdateRequest.

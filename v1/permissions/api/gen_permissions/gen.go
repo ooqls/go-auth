@@ -615,7 +615,7 @@ func (r ListMyPermissionsResponse) StatusCode() int {
 type SearchPermissionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]string
+	JSON200      *PermissionList
 }
 
 // Status returns HTTPResponse.Status
@@ -822,7 +822,7 @@ func ParseSearchPermissionsResponse(rsp *http.Response) (*SearchPermissionsRespo
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []string
+		var dest PermissionList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -35,11 +35,13 @@ CREATE TABLE IF NOT EXISTS permissionbindingsv1 (
 CREATE TABLE IF NOT EXISTS rolebindingsv1 (
   user_id uuid NOT NULL REFERENCES usersv1 (id) ON DELETE CASCADE,
   role_id uuid NOT NULL REFERENCES rolesv1 (id) ON DELETE CASCADE,
-  PRIMARY KEY (role_id, user_id),
+  PRIMARY KEY (user_id, role_id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now (),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now (),
-  UNIQUE (role_id, user_id) -- Ensure role_id and user_id are unique
+  UNIQUE (user_id, role_id) -- Ensure role_id and user_id are unique
 );
+
+CREATE INDEX ON rolebindingsv1 (user_id);
 
 
 CREATE TABLE IF NOT EXISTS resourcesv1 (
