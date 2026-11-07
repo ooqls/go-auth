@@ -39,8 +39,10 @@ components:
                     format: uuid
                 name:
                     type: string
+                    maxLength: 128
                 description:
                     type: string
+                    maxLength: 128
                 created_at:
                     type: string
                     format: date-time
@@ -62,6 +64,7 @@ components:
                     format: uuid
                 username:
                     type: string
+                    maxLength: 128
                 email:
                     type: string
                 created_at:
@@ -83,10 +86,13 @@ components:
                     format: uuid
                 name:
                     type: string
+                    maxLength: 128
                 group:
                     type: string
+                    maxLength: 128
                 kind:
                     type: string
+                    maxLength: 128
                 created_at:
                     type: string
                     format: date-time
@@ -134,3 +140,10 @@ components:
             properties:
                 permission:
                     type: string
+                page:
+                    type: number
+                    minimum: 0
+                pageSize:
+                    type: number
+                    minimum: 0
+

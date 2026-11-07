@@ -120,12 +120,15 @@ paths:
                   required: false
                   schema:
                       type: integer
+                      minimum: 0
                 - name: page_size
                   in: query
                   description: The page size
                   required: false
                   schema:
                       type: integer
+                      minimum: 0
+                      maximum: 100
             tags:
                 - roles
             responses:

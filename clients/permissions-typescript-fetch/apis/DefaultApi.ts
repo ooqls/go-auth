@@ -195,7 +195,7 @@ export class DefaultApi extends runtime.BaseAPI {
     /**
      * Searches for permissions based on the provided query
      */
-    async searchPermissionsRaw(requestParameters: SearchPermissionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<string>>> {
+    async searchPermissionsRaw(requestParameters: SearchPermissionsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PermissionList>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -213,13 +213,13 @@ export class DefaultApi extends runtime.BaseAPI {
             body: SearchRequestToJSON(requestParameters['searchRequest']),
         }, initOverrides);
 
-        return new runtime.JSONApiResponse<any>(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => PermissionListFromJSON(jsonValue));
     }
 
     /**
      * Searches for permissions based on the provided query
      */
-    async searchPermissions(requestParameters: SearchPermissionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<string>> {
+    async searchPermissions(requestParameters: SearchPermissionsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PermissionList> {
         const response = await this.searchPermissionsRaw(requestParameters, initOverrides);
         return await response.value();
     }
