@@ -140,6 +140,17 @@ func (s *ServiceImpl) DeleteResourceByName(ctx *authorizationv1.Context, group, 
 }
 
 func (s *ServiceImpl) SearchResources(ctx *authorizationv1.Context, group, kind, name, query *string) (*corev1.Result[[]Resourcev1], error) {
+	return s.readResources(ctx, group, kind, name, query, defaultSearchPageSize, 0)
+}
+
+func (s *ServiceImpl) GetResources(ctx *authorizationv1.Context, group, kind *string, page, pageSize int32) (*corev1.Result[[]Resourcev1], error) {
+	offset := max(0, (page-1)*pageSize)
+	return s.readResources(ctx, group, kind, nil, nil, pageSize, offset)
+}
+
+// readResources keeps authorization and filtering together: the reader receives
+// exactly the scope used to authorize this request, including kind-only scopes.
+func (s *ServiceImpl) readResources(ctx *authorizationv1.Context, group, kind, name, query *string, limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
 	targetGroup := "*"
 	targetKind := "*"
 
@@ -155,33 +166,5 @@ func (s *ServiceImpl) SearchResources(ctx *authorizationv1.Context, group, kind,
 		return nil, v1.ErrPermissionDenied(err, v1.M{"group": targetGroup, "kind": targetKind})
 	}
 
-	return s.rr.SearchResources(ctx, group, kind, name, query, defaultSearchPageSize, 0)
-}
-
-func (s *ServiceImpl) GetResources(ctx *authorizationv1.Context, group, kind *string, page, pageSize int32) (*corev1.Result[[]Resourcev1], error) {
-	targetGroup := "*"
-	targetKind := "*"
-
-	if group != nil {
-		targetGroup = *group
-	}
-
-	if kind != nil {
-		targetKind = *kind
-	}
-
-	target := ToTargetString(targetGroup, targetKind)
-	ctx.L().Info("attempting to read reosurces", zap.String("target", target))
-	if err := s.ra.IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, targetGroup, targetKind); err != nil {
-		return nil, err
-	}
-	offset := max(0, (page-1)*pageSize)
-	switch {
-	case group != nil && kind != nil:
-		return s.rr.GetResourcesByGroupAndKind(ctx, *group, *kind, pageSize, offset)
-	case group != nil:
-		return s.rr.GetResourcesByGroup(ctx, *group, pageSize, offset)
-	default:
-		return s.rr.GetResources(ctx, pageSize, offset)
-	}
+	return s.rr.SearchResources(ctx, group, kind, name, query, limit, offset)
 }

@@ -300,14 +300,14 @@ func TestGetResources(t *testing.T) {
 		return &corev1.Result[[]resourcesv1.Resourcev1]{Items: items, TotalCount: int64(len(items))}
 	}
 
-	t.Run("group and kind — dispatches to GetResourcesByGroupAndKind", func(t *testing.T) {
+	t.Run("group and kind — preserves both filters", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		rr := resmocks.NewMockReader(ctrl)
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		authAllowed(ra)
-		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), "mygroup", "mykind", int32(10), int32(0)).
+		ra.EXPECT().IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, "mygroup", "mykind").Return(nil)
+		rr.EXPECT().SearchResources(gomock.Any(), strPtr("mygroup"), strPtr("mykind"), nil, nil, int32(10), int32(0)).
 			Return(makeResult(*sampleResource("res1", "mygroup", "mykind"), *sampleResource("res2", "mygroup", "mykind")), nil)
 
 		svc := newTestService(rr, rw, ra)
@@ -317,14 +317,14 @@ func TestGetResources(t *testing.T) {
 		assert.Equal(t, int64(2), got.TotalCount)
 	})
 
-	t.Run("group only — dispatches to GetResourcesByGroup", func(t *testing.T) {
+	t.Run("group only — preserves group filter", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		rr := resmocks.NewMockReader(ctrl)
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		authAllowed(ra)
-		rr.EXPECT().GetResourcesByGroup(gomock.Any(), "mygroup", int32(10), int32(0)).
+		ra.EXPECT().IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, "mygroup", "*").Return(nil)
+		rr.EXPECT().SearchResources(gomock.Any(), strPtr("mygroup"), nil, nil, nil, int32(10), int32(0)).
 			Return(makeResult(*sampleResource("res1", "mygroup", "kind1")), nil)
 
 		svc := newTestService(rr, rw, ra)
@@ -333,14 +333,43 @@ func TestGetResources(t *testing.T) {
 		assert.Len(t, got.Items, 1)
 	})
 
-	t.Run("no filter — dispatches to GetResources", func(t *testing.T) {
+	t.Run("kind only — preserves authorized scope", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		rr := resmocks.NewMockReader(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+		kind := "mykind"
+		result := makeResult(*sampleResource("res1", "group1", kind))
+		gomock.InOrder(
+			ra.EXPECT().IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, "*", kind).Return(nil),
+			rr.EXPECT().SearchResources(ctx, nil, &kind, nil, nil, int32(10), int32(10)).Return(result, nil),
+		)
+
+		got, err := newTestService(rr, nil, ra).GetResources(ctx, nil, &kind, 2, 10)
+		require.NoError(t, err)
+		assert.Equal(t, result, got)
+	})
+
+	t.Run("kind only — denied before reading", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		rr := resmocks.NewMockReader(ctrl)
+		ra := authmocks.NewMockAuthorizer(ctrl)
+		kind := "mykind"
+		ra.EXPECT().IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, "*", kind).
+			Return(authorizationv1.ErrPermissionDenied)
+
+		got, err := newTestService(rr, nil, ra).GetResources(ctx, nil, &kind, 1, 10)
+		require.ErrorIs(t, err, authorizationv1.ErrPermissionDenied)
+		assert.Nil(t, got)
+	})
+
+	t.Run("no filter — reads all resources", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		rr := resmocks.NewMockReader(ctrl)
 		rw := resmocks.NewMockWriter(ctrl)
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
-		authAllowed(ra)
-		rr.EXPECT().GetResources(gomock.Any(), int32(10), int32(0)).
+		ra.EXPECT().IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, "*", "*").Return(nil)
+		rr.EXPECT().SearchResources(gomock.Any(), nil, nil, nil, nil, int32(10), int32(0)).
 			Return(makeResult(*sampleResource("res1", "g1", "k1")), nil)
 
 		svc := newTestService(rr, rw, ra)
@@ -361,6 +390,7 @@ func TestGetResources(t *testing.T) {
 		got, err := svc.GetResources(ctx, strPtr("mygroup"), strPtr("mykind"), 1, 10)
 		require.Error(t, err)
 		assert.Nil(t, got)
+		assertForbidden(t, err)
 	})
 
 	t.Run("reader error propagates", func(t *testing.T) {
@@ -370,7 +400,7 @@ func TestGetResources(t *testing.T) {
 		ra := authmocks.NewMockAuthorizer(ctrl)
 
 		authAllowed(ra)
-		rr.EXPECT().GetResourcesByGroupAndKind(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+		rr.EXPECT().SearchResources(gomock.Any(), gomock.Any(), gomock.Any(), nil, nil, gomock.Any(), gomock.Any()).
 			Return(nil, errors.New("db error"))
 
 		svc := newTestService(rr, rw, ra)
@@ -378,4 +408,53 @@ func TestGetResources(t *testing.T) {
 		require.Error(t, err)
 		assert.Nil(t, got)
 	})
+}
+
+func TestSearchResources(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name                    string
+		group, kind             *string
+		targetGroup, targetKind string
+	}{
+		{name: "group and kind", group: strPtr("group"), kind: strPtr("kind"), targetGroup: "group", targetKind: "kind"},
+		{name: "group only", group: strPtr("group"), targetGroup: "group", targetKind: "*"},
+		{name: "kind only", kind: strPtr("kind"), targetGroup: "*", targetKind: "kind"},
+		{name: "no filters", targetGroup: "*", targetKind: "*"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, allowed := range []bool{true, false} {
+				name := "denied"
+				if allowed {
+					name = "allowed"
+				}
+				t.Run(name, func(t *testing.T) {
+					ctrl := gomock.NewController(t)
+					rr := resmocks.NewMockReader(ctrl)
+					ra := authmocks.NewMockAuthorizer(ctrl)
+					ctx := newAuthCtx(sampleUser("searcher"))
+					resourceName, query := "resource", "query"
+					auth := ra.EXPECT().IsAuthorizedToPerformResourceAction(ctx, authorizationv1.ReadAction, tc.targetGroup, tc.targetKind)
+					result := &corev1.Result[[]resourcesv1.Resourcev1]{}
+					if allowed {
+						auth.Return(nil)
+						rr.EXPECT().SearchResources(ctx, tc.group, tc.kind, &resourceName, &query, int32(defaultSearchPageSize), int32(0)).
+							After(auth).Return(result, nil)
+					} else {
+						auth.Return(authorizationv1.ErrPermissionDenied)
+					}
+					got, err := newTestService(rr, nil, ra).SearchResources(ctx, tc.group, tc.kind, &resourceName, &query)
+					if allowed {
+						require.NoError(t, err)
+						assert.Equal(t, result, got)
+					} else {
+						require.ErrorIs(t, err, authorizationv1.ErrPermissionDenied)
+						assertForbidden(t, err)
+						assert.Nil(t, got)
+					}
+				})
+			}
+		})
+	}
 }

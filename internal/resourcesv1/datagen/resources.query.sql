@@ -1,6 +1,9 @@
 -- name: GetResourceByName :one
 SELECT * FROM resourcesv1 WHERE name = $1;
 
+-- name: GetResourceByScope :one
+SELECT * FROM resourcesv1 WHERE rGroup = $1 AND kind = $2 AND name = $3;
+
 -- name: GetResources :many
 SELECT * FROM resourcesv1 ORDER BY name LIMIT $1 OFFSET $2;
 

@@ -5,6 +5,7 @@ package resourcesv1
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -16,14 +17,6 @@ import (
 	"github.com/ooqls/go-auth/internal/resourcesv1/datagen"
 	"go.uber.org/zap"
 )
-
-func getCacheKey(name string) string {
-	return fmt.Sprintf("resource-%s", name)
-}
-
-func getPaginatedKey(limit, offset int32) string {
-	return fmt.Sprintf("resource-page-%d-%d", limit, offset)
-}
 
 type Reader interface {
 	GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourcev1, error)
@@ -50,12 +43,18 @@ func NewSQLReader(c *cache.GenericCache, queries *datagen.Queries) Reader {
 }
 
 func (r *SQLReader) GetResource(ctx context.Context, group, kind, name string) (*Resourcev1, error) {
-	cacheKey := getCacheKey(name)
-	if cached := r.getCache(ctx, cacheKey); cached != nil {
+	// Quoted fields keep delimiter-containing names and scopes distinct. The
+	// versioned prefix also prevents reads from using older, unscoped entries.
+	cacheKey := fmt.Sprintf("resource:v2:scope:%q:%q:%q", group, kind, name)
+	if cached := r.getCache(ctx, cacheKey); len(cached) > 0 {
 		return &cached[0], nil
 	}
 
-	res, err := r.q.GetResourceByName(ctx, name)
+	res, err := r.q.GetResourceByScope(ctx, datagen.GetResourceByScopeParams{
+		Rgroup: group,
+		Kind:   kind,
+		Name:   name,
+	})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -70,8 +69,8 @@ func (r *SQLReader) GetResource(ctx context.Context, group, kind, name string) (
 }
 
 func (r *SQLReader) GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourcev1, error) {
-	cacheKey := getCacheKey(id.String())
-	if cached := r.getCache(ctx, cacheKey); cached != nil {
+	cacheKey := fmt.Sprintf("resource:v2:id:%s", id)
+	if cached := r.getCache(ctx, cacheKey); len(cached) > 0 {
 		return &cached[0], nil
 	}
 
@@ -90,99 +89,15 @@ func (r *SQLReader) GetResourceByID(ctx context.Context, id uuid.UUID) (*Resourc
 }
 
 func (r *SQLReader) GetResources(ctx context.Context, limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
-	cacheKey := getPaginatedKey(limit, offset)
-	if res := r.getCache(ctx, cacheKey); res != nil {
-		total, err := r.q.CountAllResources(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
-	}
-
-	qres, err := r.q.GetResources(ctx, datagen.GetResourcesParams{
-		Limit:  limit,
-		Offset: offset,
-	})
-	if err != nil {
-		r.l.Error("failed to list resources", zap.Error(err))
-		return nil, err
-	}
-
-	total, err := r.q.CountAllResources(ctx)
-	if err != nil {
-		r.l.Error("failed to count resources", zap.Error(err))
-		return nil, err
-	}
-
-	res := FromDatagenResourceList(qres)
-
-	r.setCache(ctx, cacheKey, res...)
-	return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
+	return r.SearchResources(ctx, nil, nil, nil, nil, limit, offset)
 }
 
 func (r *SQLReader) GetResourcesByGroup(ctx context.Context, group string, limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
-	cacheKey := fmt.Sprintf("group-%s:%s", group, getPaginatedKey(limit, offset))
-	if res := r.getCache(ctx, cacheKey); res != nil {
-		total, err := r.q.CountResourcesByGroup(ctx, group)
-		if err != nil {
-			return nil, err
-		}
-		return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
-	}
-
-	qres, err := r.q.GetResourcesByGroup(ctx, datagen.GetResourcesByGroupParams{
-		Rgroup: group,
-		Limit:  limit,
-		Offset: offset,
-	})
-	if err != nil {
-		r.l.Error("failed to list resources by group", zap.String("group", group), zap.Error(err))
-		return nil, err
-	}
-
-	total, err := r.q.CountResourcesByGroup(ctx, group)
-	if err != nil {
-		r.l.Error("failed to count resources by group", zap.String("group", group), zap.Error(err))
-		return nil, err
-	}
-
-	res := FromDatagenResourceList(qres)
-
-	r.setCache(ctx, cacheKey, res...)
-	return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
+	return r.SearchResources(ctx, &group, nil, nil, nil, limit, offset)
 }
 
 func (r *SQLReader) GetResourcesByGroupAndKind(ctx context.Context, group, kind string, limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
-	cacheKey := fmt.Sprintf("group-%s:kind-%s:%s", group, kind, getPaginatedKey(limit, offset))
-	if res := r.getCache(ctx, cacheKey); res != nil {
-		total, err := r.q.CountResources(ctx, datagen.CountResourcesParams{Rgroup: group, Kind: kind})
-		if err != nil {
-			return nil, err
-		}
-		return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
-	}
-
-	qres, err := r.q.GetResourcesByGroupAndKind(ctx, datagen.GetResourcesByGroupAndKindParams{
-		Rgroup: group,
-		Kind:   kind,
-		Limit:  limit,
-		Offset: offset,
-	})
-	if err != nil {
-		r.l.Error("failed to list resources by group and kind", zap.String("group", group), zap.String("kind", kind), zap.Error(err))
-		return nil, err
-	}
-
-	total, err := r.q.CountResources(ctx, datagen.CountResourcesParams{Rgroup: group, Kind: kind})
-	if err != nil {
-		r.l.Error("failed to count resources by group and kind", zap.String("group", group), zap.String("kind", kind), zap.Error(err))
-		return nil, err
-	}
-
-	res := FromDatagenResourceList(qres)
-
-	r.setCache(ctx, cacheKey, res...)
-	return &corev1.Result[[]Resourcev1]{Items: res, TotalCount: total}, nil
+	return r.SearchResources(ctx, &group, &kind, nil, nil, limit, offset)
 }
 
 func (r *SQLReader) SearchResources(ctx context.Context,
@@ -191,15 +106,13 @@ func (r *SQLReader) SearchResources(ctx context.Context,
 	name,
 	query *string,
 	limit, offset int32) (*corev1.Result[[]Resourcev1], error) {
-	cacheKey := "search_resources"
-	keys := []*string{group, kind, name, query}
-	for _, key := range keys {
-		if key != nil {
-			cacheKey = fmt.Sprintf("%s:%s", cacheKey, *key)
-		} else {
-			cacheKey += ":*"
-		}
+	// Encode optional filters structurally: nil, literal "*", delimiters, and
+	// different pages must never identify the same cached result.
+	key, err := json.Marshal([]any{group, kind, name, query, limit, offset})
+	if err != nil {
+		return nil, err
 	}
+	cacheKey := "resource:v2:search:" + string(key)
 
 	cached := r.getCache(ctx, cacheKey)
 	if cached != nil {

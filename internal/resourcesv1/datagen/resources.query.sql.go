@@ -50,6 +50,33 @@ func (q *Queries) CountResourcesByGroup(ctx context.Context, rgroup string) (int
 	return count, err
 }
 
+const countSearchResources = `-- name: CountSearchResources :one
+SELECT COUNT(*) FROM resourcesv1
+WHERE (rGroup = $1 OR $1 IS NULL)
+  AND (kind = $2 OR $2 IS NULL)
+  AND (name = $3 OR $3 IS NULL)
+  AND ($4::text IS NULL OR name ILIKE '%' || $4 || '%')
+`
+
+type CountSearchResourcesParams struct {
+	Rgroup pgtype.Text
+	Kind   pgtype.Text
+	Name   pgtype.Text
+	Query  pgtype.Text
+}
+
+func (q *Queries) CountSearchResources(ctx context.Context, arg CountSearchResourcesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countSearchResources,
+		arg.Rgroup,
+		arg.Kind,
+		arg.Name,
+		arg.Query,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createResource = `-- name: CreateResource :one
 INSERT INTO resourcesv1 (
   name,
@@ -148,6 +175,31 @@ SELECT id, name, rgroup, kind, description, created_at, updated_at FROM resource
 
 func (q *Queries) GetResourceByName(ctx context.Context, name string) (Resourcesv1, error) {
 	row := q.db.QueryRow(ctx, getResourceByName, name)
+	var i Resourcesv1
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Rgroup,
+		&i.Kind,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getResourceByScope = `-- name: GetResourceByScope :one
+SELECT id, name, rgroup, kind, description, created_at, updated_at FROM resourcesv1 WHERE rGroup = $1 AND kind = $2 AND name = $3
+`
+
+type GetResourceByScopeParams struct {
+	Rgroup string
+	Kind   string
+	Name   string
+}
+
+func (q *Queries) GetResourceByScope(ctx context.Context, arg GetResourceByScopeParams) (Resourcesv1, error) {
+	row := q.db.QueryRow(ctx, getResourceByScope, arg.Rgroup, arg.Kind, arg.Name)
 	var i Resourcesv1
 	err := row.Scan(
 		&i.ID,
@@ -287,7 +339,7 @@ WHERE (rGroup = $1 OR $1 IS NULL)
   AND (name = $3 OR $3 IS NULL)
   AND ($4::text IS NULL OR name ILIKE '%' || $4 || '%')
 ORDER BY name
-LIMIT $5 OFFSET $6
+LIMIT $6 OFFSET $5
 `
 
 type SearchResourcesParams struct {
@@ -295,8 +347,8 @@ type SearchResourcesParams struct {
 	Kind   pgtype.Text
 	Name   pgtype.Text
 	Query  pgtype.Text
-	Limit  int32
 	Offset int32
+	Limit  int32
 }
 
 func (q *Queries) SearchResources(ctx context.Context, arg SearchResourcesParams) ([]Resourcesv1, error) {
@@ -305,8 +357,8 @@ func (q *Queries) SearchResources(ctx context.Context, arg SearchResourcesParams
 		arg.Kind,
 		arg.Name,
 		arg.Query,
-		arg.Limit,
 		arg.Offset,
+		arg.Limit,
 	)
 	if err != nil {
 		return nil, err
@@ -332,33 +384,6 @@ func (q *Queries) SearchResources(ctx context.Context, arg SearchResourcesParams
 		return nil, err
 	}
 	return items, nil
-}
-
-const countSearchResources = `-- name: CountSearchResources :one
-SELECT COUNT(*) FROM resourcesv1
-WHERE (rGroup = $1 OR $1 IS NULL)
-  AND (kind = $2 OR $2 IS NULL)
-  AND (name = $3 OR $3 IS NULL)
-  AND ($4::text IS NULL OR name ILIKE '%' || $4 || '%')
-`
-
-type CountSearchResourcesParams struct {
-	Rgroup pgtype.Text
-	Kind   pgtype.Text
-	Name   pgtype.Text
-	Query  pgtype.Text
-}
-
-func (q *Queries) CountSearchResources(ctx context.Context, arg CountSearchResourcesParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countSearchResources,
-		arg.Rgroup,
-		arg.Kind,
-		arg.Name,
-		arg.Query,
-	)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
 }
 
 const updateResource = `-- name: UpdateResource :one
