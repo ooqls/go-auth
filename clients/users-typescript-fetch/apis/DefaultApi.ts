@@ -16,8 +16,8 @@
 import * as runtime from '../runtime';
 import type {
   CreateUserRequest,
+  CurrentUserResponse,
   DeleteResponse,
-  GetCurrentUser200Response,
   UpdateRequest,
   User,
   UserList,
@@ -25,10 +25,10 @@ import type {
 import {
     CreateUserRequestFromJSON,
     CreateUserRequestToJSON,
+    CurrentUserResponseFromJSON,
+    CurrentUserResponseToJSON,
     DeleteResponseFromJSON,
     DeleteResponseToJSON,
-    GetCurrentUser200ResponseFromJSON,
-    GetCurrentUser200ResponseToJSON,
     UpdateRequestFromJSON,
     UpdateRequestToJSON,
     UserFromJSON,
@@ -137,8 +137,9 @@ export class DefaultApi extends runtime.BaseAPI {
     }
 
     /**
+     * Returns the authenticated user\'s own public record and fresh capabilities. Does not require permission to read other users. Responses must not be cached.
      */
-    async getCurrentUserRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GetCurrentUser200Response>> {
+    async getCurrentUserRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CurrentUserResponse>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -153,12 +154,13 @@ export class DefaultApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => GetCurrentUser200ResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => CurrentUserResponseFromJSON(jsonValue));
     }
 
     /**
+     * Returns the authenticated user\'s own public record and fresh capabilities. Does not require permission to read other users. Responses must not be cached.
      */
-    async getCurrentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GetCurrentUser200Response> {
+    async getCurrentUser(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CurrentUserResponse> {
         const response = await this.getCurrentUserRaw(initOverrides);
         return await response.value();
     }

@@ -31,6 +31,24 @@ type CreateUserRequest struct {
 	Username string  `json:"username"`
 }
 
+// CurrentUserCapabilities Evaluated UI hints for the current user, using the same authorization checks as protected operations. Every protected request is still checked. These decisions do not grant target-specific role or resource mutation rights.
+type CurrentUserCapabilities struct {
+	PermissionsCreate bool `json:"permissions_create"`
+	PermissionsRead   bool `json:"permissions_read"`
+
+	// ResourcesRead Permission to read the unfiltered resource list (group=* and kind=*).
+	ResourcesRead bool `json:"resources_read"`
+	RolesRead     bool `json:"roles_read"`
+	UsersRead     bool `json:"users_read"`
+}
+
+// CurrentUserResponse defines model for CurrentUserResponse.
+type CurrentUserResponse struct {
+	// Capabilities Evaluated UI hints for the current user, using the same authorization checks as protected operations. Every protected request is still checked. These decisions do not grant target-specific role or resource mutation rights.
+	Capabilities CurrentUserCapabilities `json:"capabilities"`
+	User         externalRef0.User       `json:"user"`
+}
+
 // UserList defines model for UserList.
 type UserList struct {
 	Items      []externalRef0.User `json:"items"`
@@ -558,9 +576,7 @@ type ClientWithResponsesInterface interface {
 type GetCurrentUserResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		User *externalRef0.User `json:"user,omitempty"`
-	}
+	JSON200      *CurrentUserResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -773,9 +789,7 @@ func ParseGetCurrentUserResponse(rsp *http.Response) (*GetCurrentUserResponse, e
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			User *externalRef0.User `json:"user,omitempty"`
-		}
+		var dest CurrentUserResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

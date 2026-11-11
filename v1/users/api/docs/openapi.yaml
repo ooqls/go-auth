@@ -17,6 +17,40 @@ components:
       in: cookie
       name: OKEY
   schemas:
+    CurrentUserCapabilities:
+      type: object
+      description: >-
+        Evaluated UI hints for the current user, using the same authorization
+        checks as protected operations. Every protected request is still checked.
+        These decisions do not grant target-specific role or resource mutation rights.
+      required:
+        - users_read
+        - roles_read
+        - permissions_read
+        - permissions_create
+        - resources_read
+      properties:
+        users_read:
+          type: boolean
+        roles_read:
+          type: boolean
+        permissions_read:
+          type: boolean
+        permissions_create:
+          type: boolean
+        resources_read:
+          type: boolean
+          description: Permission to read the unfiltered resource list (group=* and kind=*).
+    CurrentUserResponse:
+      type: object
+      required:
+        - user
+        - capabilities
+      properties:
+        user:
+          $ref: "schemas.yaml#/components/schemas/User"
+        capabilities:
+          $ref: "#/components/schemas/CurrentUserCapabilities"
     UserList:
       type: object
       required:
@@ -118,20 +152,24 @@ paths:
   /user:
     get:
       operationId: getCurrentUser
+      description: >-
+        Returns the authenticated user's own public record and fresh capabilities.
+        Does not require permission to read other users. Responses must not be cached.
       responses:
         '200':
           description: Successful user retrieval
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user:
-                    $ref: "schemas.yaml#/components/schemas/User"
+                $ref: "#/components/schemas/CurrentUserResponse"
         '401':
           description: Invalid credentials
+        '403':
+          description: Authenticated user identity required
         '404':
           description: User not found
+        '500':
+          description: Unable to load the current user or evaluate capabilities
     post:
       operationId: createUser
       requestBody:

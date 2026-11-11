@@ -51,6 +51,7 @@ type Service interface {
 	CreateUserWithRandomPassword(ctx *authorizationv1.Context, email string, username string) (*User, string, error)
 	CreateUserWithPassword(ctx *authorizationv1.Context, email string, username string, key []byte, salt []byte) (*User, error)
 	GetUser(ctx *authorizationv1.Context, id UserId) (*User, error)
+	GetCurrentUser(ctx *authorizationv1.Context) (*CurrentUser, error)
 	GetUsers(ctx *authorizationv1.Context, page int, pageSize int) (*corev1.Result[[]User], error)
 	GetUserByUsername(ctx *authorizationv1.Context, username string) (*User, error)
 	UpdateUserEmail(ctx *authorizationv1.Context, id UserId, email string) error
@@ -151,6 +152,13 @@ func (u *UserServiceImpl) GetUser(ctx *authorizationv1.Context, id uuid.UUID) (*
 }
 
 func (u *UserServiceImpl) GetUsers(ctx *authorizationv1.Context, page int, pageSize int) (*corev1.Result[[]User], error) {
+	if err := u.ua.IsAuthorizedToPerformCoreAction(ctx, authorizationv1.ReadAction, corev1.UsersV1.Group, corev1.UsersV1.Kind); err != nil {
+		if errors.Is(err, authorizationv1.ErrPermissionDenied) {
+			return nil, v1.ErrPermissionDenied(err, v1.M{})
+		}
+		return nil, v1.ErrInternal(err, v1.M{})
+	}
+
 	users, err := u.userR.GetUsers(ctx, int32(page*pageSize), int32(pageSize))
 	if err != nil {
 		u.l.Error("failed to get users", zap.Error(err))

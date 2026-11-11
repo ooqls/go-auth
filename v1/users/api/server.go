@@ -123,25 +123,29 @@ func (s *UsersServer) GetUserByID(ctx *gin.Context, id uuid.UUID) {
 }
 
 func (s *UsersServer) GetCurrentUser(ctx *gin.Context) {
+	ctx.Header("Cache-Control", "no-store")
 	authCtx, ok := authorizationv1.FromGinContext(ctx)
 	if !ok {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "Could not get authorization context"})
 		return
 	}
 
-	authedUser := authCtx.GetAuthedUser()
-	user, err := s.service.GetUser(authCtx, authedUser.Id)
+	current, err := s.service.GetCurrentUser(authCtx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		v1.GinHandleError(ctx, err)
 		return
 	}
 
-	if user == nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"user": toGenUser(*user)})
+	ctx.JSON(http.StatusOK, gen_users.CurrentUserResponse{
+		User: toGenUser(current.User),
+		Capabilities: gen_users.CurrentUserCapabilities{
+			UsersRead:         current.Capabilities.UsersRead,
+			RolesRead:         current.Capabilities.RolesRead,
+			PermissionsRead:   current.Capabilities.PermissionsRead,
+			PermissionsCreate: current.Capabilities.PermissionsCreate,
+			ResourcesRead:     current.Capabilities.ResourcesRead,
+		},
+	})
 }
 
 func (s *UsersServer) UpdateUserByID(ctx *gin.Context, id uuid.UUID) {
@@ -230,7 +234,7 @@ func (s *UsersServer) GetUsers(ctx *gin.Context, params gen_users.GetUsersParams
 
 	result, err := s.service.GetUsers(authCtx, page, pageSize)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		v1.GinHandleError(ctx, err)
 		return
 	}
 
