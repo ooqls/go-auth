@@ -1,9 +1,12 @@
 package datav1
 
 import (
+	"context"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ooqls/getset/cache/cache"
 	"github.com/ooqls/getset/cache/factory"
 	"github.com/ooqls/go-auth/internal/aggsv1"
 	aggsdatagen "github.com/ooqls/go-auth/internal/aggsv1/datagen"
@@ -34,6 +37,8 @@ func NewFactory(db *pgxpool.Pool, cacheFactory factory.CacheFactory) *SQLFactory
 
 //go:generate go run go.uber.org/mock/mockgen -source=factory.go -destination=mocks/mock_factory.go -package=mocks
 type Factory interface {
+	BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error)
+	NewCache(key string, ttl time.Duration) cache.GenericCache
 	NewRoleReader() roles.Reader
 	NewRoleWriter() roles.Writer
 	NewRoleBindingsReader() rolebindings.Reader
@@ -132,6 +137,14 @@ func (f *SQLFactory) NewPermissionBindingReader() permissionbindingsv1.Reader {
 func (f *SQLFactory) NewPermissionBindingWriter() permissionbindingsv1.Writer {
 	queries := permissionbindingsdatagen.New(f.db)
 	return permissionbindingsv1.NewSQLWriter(*queries)
+}
+
+func (f *SQLFactory) BeginTx(ctx context.Context, options pgx.TxOptions) (pgx.Tx, error) {
+	return f.db.BeginTx(ctx, options)
+}
+
+func (f *SQLFactory) NewCache(key string, ttl time.Duration) cache.GenericCache {
+	return f.cacheFactory.NewCache(key, ttl)
 }
 
 func (f *SQLFactory) NewAggReader() aggsv1.Reader {

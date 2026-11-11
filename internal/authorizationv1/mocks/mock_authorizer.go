@@ -55,20 +55,6 @@ func (mr *MockAuthorizerMockRecorder) HasHigherHierarchy(ctx, hierarchy any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasHigherHierarchy", reflect.TypeOf((*MockAuthorizer)(nil).HasHigherHierarchy), ctx, hierarchy)
 }
 
-// IsAuthorizedToAssignPermission mocks base method.
-func (m *MockAuthorizer) IsAuthorizedToAssignPermission(ctx *authorizationv1.Context, roleID uuid.UUID, permission string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsAuthorizedToAssignPermission", ctx, roleID, permission)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// IsAuthorizedToAssignPermission indicates an expected call of IsAuthorizedToAssignPermission.
-func (mr *MockAuthorizerMockRecorder) IsAuthorizedToAssignPermission(ctx, roleID, permission any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedToAssignPermission", reflect.TypeOf((*MockAuthorizer)(nil).IsAuthorizedToAssignPermission), ctx, roleID, permission)
-}
-
 // IsAuthorizedToModifyUser mocks base method.
 func (m *MockAuthorizer) IsAuthorizedToModifyUser(ctx *authorizationv1.Context, targetUserID uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -137,18 +123,4 @@ func (m *MockAuthorizer) IsAuthorizedToReadUserRoles(ctx *authorizationv1.Contex
 func (mr *MockAuthorizerMockRecorder) IsAuthorizedToReadUserRoles(ctx, targetUserID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedToReadUserRoles", reflect.TypeOf((*MockAuthorizer)(nil).IsAuthorizedToReadUserRoles), ctx, targetUserID)
-}
-
-// IsAuthorizedToUnassignPermission mocks base method.
-func (m *MockAuthorizer) IsAuthorizedToUnassignPermission(ctx *authorizationv1.Context, roleID uuid.UUID) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsAuthorizedToUnassignPermission", ctx, roleID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// IsAuthorizedToUnassignPermission indicates an expected call of IsAuthorizedToUnassignPermission.
-func (mr *MockAuthorizerMockRecorder) IsAuthorizedToUnassignPermission(ctx, roleID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedToUnassignPermission", reflect.TypeOf((*MockAuthorizer)(nil).IsAuthorizedToUnassignPermission), ctx, roleID)
 }

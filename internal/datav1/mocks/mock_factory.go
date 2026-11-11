@@ -10,8 +10,12 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
+	time "time"
 
+	pgx "github.com/jackc/pgx/v5"
+	cache "github.com/ooqls/getset/cache/cache"
 	aggsv1 "github.com/ooqls/go-auth/internal/aggsv1"
 	permissionbindingsv1 "github.com/ooqls/go-auth/internal/permissionbindingsv1"
 	permissionsv1 "github.com/ooqls/go-auth/internal/permissionsv1"
@@ -46,6 +50,21 @@ func (m *MockFactory) EXPECT() *MockFactoryMockRecorder {
 	return m.recorder
 }
 
+// BeginTx mocks base method.
+func (m *MockFactory) BeginTx(arg0 context.Context, arg1 pgx.TxOptions) (pgx.Tx, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BeginTx", arg0, arg1)
+	ret0, _ := ret[0].(pgx.Tx)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BeginTx indicates an expected call of BeginTx.
+func (mr *MockFactoryMockRecorder) BeginTx(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BeginTx", reflect.TypeOf((*MockFactory)(nil).BeginTx), arg0, arg1)
+}
+
 // NewAggReader mocks base method.
 func (m *MockFactory) NewAggReader() aggsv1.Reader {
 	m.ctrl.T.Helper()
@@ -58,6 +77,20 @@ func (m *MockFactory) NewAggReader() aggsv1.Reader {
 func (mr *MockFactoryMockRecorder) NewAggReader() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewAggReader", reflect.TypeOf((*MockFactory)(nil).NewAggReader))
+}
+
+// NewCache mocks base method.
+func (m *MockFactory) NewCache(key string, ttl time.Duration) cache.GenericCache {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewCache", key, ttl)
+	ret0, _ := ret[0].(cache.GenericCache)
+	return ret0
+}
+
+// NewCache indicates an expected call of NewCache.
+func (mr *MockFactoryMockRecorder) NewCache(key, ttl any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewCache", reflect.TypeOf((*MockFactory)(nil).NewCache), key, ttl)
 }
 
 // NewPermissionBindingReader mocks base method.

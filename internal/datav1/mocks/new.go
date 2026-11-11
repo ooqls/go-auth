@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	cachefactory "github.com/ooqls/getset/cache/factory"
 	"github.com/ooqls/go-auth/internal/aggsv1"
 	"github.com/ooqls/go-auth/internal/datav1"
 	"github.com/ooqls/go-auth/internal/permissionbindingsv1"
@@ -42,6 +43,7 @@ func NewMockFactoryFromParams(ctrl *gomock.Controller, p MockParams) datav1.Fact
 	f.EXPECT().NewPermissionWriter().Return(p.PermissionWriter).AnyTimes()
 	f.EXPECT().NewPermissionBindingReader().Return(p.PermissionBindingReader).AnyTimes()
 	f.EXPECT().NewPermissionBindingWriter().Return(p.PermissionBindingWriter).AnyTimes()
+	f.EXPECT().NewCache(gomock.Any(), gomock.Any()).DoAndReturn((&cachefactory.MemCacheFactory{}).NewCache).AnyTimes()
 	f.EXPECT().NewAggReader().Return(p.AggReader).AnyTimes()
 	return f
 }

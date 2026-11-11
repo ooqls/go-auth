@@ -50,6 +50,8 @@ v1/base/              → reusable Gin app bootstrap (BuildBaseGinApp[T])
 
 **Authorization context:** Handlers call `authorizationv1.FromGinContext(c)` to get the `*authorizationv1.Context` (carries logger + auth claims). Return 403 if not present.
 
+**Internal package scope:** Packages under `internal/` are only responsible for reading and writing core data. They must not evaluate permissions or enforce authorization policy. Authorization checks belong outside `internal/`; callers must authorize operations before invoking internal data readers or writers.
+
 **Factory pattern:** `internal/datav1.Factory` is created once at startup and passed to all service constructors. It produces typed readers and writers:
 ```go
 factory.NewUserReader()
@@ -57,7 +59,7 @@ factory.NewRoleWriter()
 // etc.
 ```
 
-**Error handling:** Use `v1.GinHandleError(ctx, err)` in handlers. Internal errors are typed (`NotFoundError`, `AlreadyExistsError`, `InternalError`, `ForbiddenError`) and map to HTTP status codes automatically.
+**Error handling:** All subpackages of `v1` must use the error types and constructors defined in the root `v1` package (`NotFoundError`, `AlreadyExistsError`, `InternalError`, `ForbiddenError`). Add any new exported error type, sentinel, or constructor needed by a `v1` subpackage to the root `v1` package; unexported errors may remain local to the subpackage. Use `v1.GinHandleError(ctx, err)` in handlers to map typed errors to HTTP status codes.
 
 **JSONB columns** (e.g., `actions`, `permissions`) are generated as `[]byte` by SQLC. Unmarshal to the appropriate Go type in the service layer; use sqlc `overrides` in `sqlc.yaml` if you need a custom type scanned automatically.
 

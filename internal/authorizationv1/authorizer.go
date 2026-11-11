@@ -16,8 +16,6 @@ import (
 var _ Authorizer = &AuthorizerImpl{}
 
 type Authorizer interface {
-	IsAuthorizedToAssignPermission(ctx *Context, roleID uuid.UUID, permission string) error
-	IsAuthorizedToUnassignPermission(ctx *Context, roleID uuid.UUID) error
 	IsAuthorizedToModifyUser(ctx *Context, targetUserID uuid.UUID) error
 	IsAuthorizedToReadUserRoles(ctx *Context, targetUserID uuid.UUID) error
 	HasHigherHierarchy(ctx *Context, hierarchy int32) error
@@ -42,37 +40,6 @@ func NewAuthorizerImpl(fact datav1.Factory) Authorizer {
 	}
 }
 
-func (a *AuthorizerImpl) IsAuthorizedToAssignPermission(ctx *Context, roleID uuid.UUID, permission string) error {
-	if ctx.IsInternalOperation() {
-		return nil
-	}
-
-	requester := ctx.GetAuthedUser()
-	requesterHierarchy, err := a.aReader.GetUserHierarchy(ctx, requester.Id)
-	if err != nil {
-		return err
-	}
-
-	role, err := a.rReader.GetRole(ctx, roleID)
-	if err != nil {
-		return err
-	}
-
-	if role != nil && role.Hierarchy > requesterHierarchy {
-		ctx.L().Debug("assign permission denied: role hierarchy exceeds requester hierarchy")
-		return ErrPermissionDenied
-	}
-
-	pMeta := corev1.PermissionsV1
-	authed, err := a.pReader.HasCorePermission(ctx, requester.Id, pMeta.Group, pMeta.Kind, string(AssignAction))
-	if !authed {
-		ctx.L().Debug("assign permission denied: requester lacks permission binding assign permission")
-		return ErrPermissionDenied
-	}
-
-	return nil
-}
-
 func (a *AuthorizerImpl) HasHigherHierarchy(ctx *Context, hierarchy int32) error {
 	if ctx.IsInternalOperation() {
 		return nil
@@ -86,41 +53,6 @@ func (a *AuthorizerImpl) HasHigherHierarchy(ctx *Context, hierarchy int32) error
 	if requesterHierarchy < hierarchy {
 		return ErrPermissionDenied
 	}
-	return nil
-}
-
-func (a *AuthorizerImpl) IsAuthorizedToUnassignPermission(ctx *Context, roleID uuid.UUID) error {
-	if ctx.IsInternalOperation() {
-		return nil
-	}
-
-	requester := ctx.GetAuthedUser()
-
-	requesterHierarchy, err := a.aReader.GetUserHierarchy(ctx, requester.Id)
-	if err != nil {
-		return err
-	}
-
-	role, err := a.rReader.GetRole(ctx, roleID)
-	if err != nil {
-		return err
-	}
-
-	if role != nil && role.Hierarchy > requesterHierarchy {
-		ctx.L().Debug("unassign permission denied: role hierarchy exceeds requester hierarchy")
-		return ErrPermissionDenied
-	}
-
-	authed, err := a.pReader.HasCorePermission(ctx, requester.Id, corev1.PermissionsV1.Group, corev1.PermissionsV1.Kind, string(UnassignAction))
-	if err != nil {
-		return err
-	}
-
-	if !authed {
-		ctx.L().Debug("unassign permission denied: requester lacks permission binding delete permission")
-		return ErrPermissionDenied
-	}
-
 	return nil
 }
 
