@@ -31,4 +31,4 @@ jobs:
       - name: Build and push base image
         run: |
           make ci_build_base
-          make push_base
+          make push
