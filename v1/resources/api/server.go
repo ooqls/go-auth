@@ -95,7 +95,7 @@ func (r *ResourcesServer) PostResourceSearch(c *gin.Context) {
 	result, err := r.service.SearchResources(authCtx, req.Group, req.Kind, req.Name, req.Query)
 	if err != nil {
 		r.l.Error("failed to search resources", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		v1.GinHandleError(c, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ func (r *ResourcesServer) ListResources(c *gin.Context, params gen_resources.Lis
 	result, err := r.service.GetResources(authCtx, params.Group, params.Kind, page, pageSize)
 	if err != nil {
 		r.l.Error("failed to get resources", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		v1.GinHandleError(c, err)
 		return
 	}
 
